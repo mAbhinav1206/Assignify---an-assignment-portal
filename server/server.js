@@ -57,7 +57,7 @@ app.post("/signup", async (req, res) => {
 
     } catch (error) {
         console.log("Signup error:", error);
-        res.status(500).json({ message: "Server error" });
+        res.status(500).json({ message: "Server not responding" });
     }
 
 });

@@ -1,5 +1,5 @@
 import React from "react";
-import Navbar from "../components/Navbar";
+import LoginNavbar from "../components/LoginNavbar";
 import SignupHeaderSection from "../components/SignupHeaderSection";
 import SignupForm from "../components/SignupForm";
 import SocialLogin from "../components/SocialLogin";
@@ -12,7 +12,7 @@ function Signup() {
       <div className="mainContent">
         <div className="hero">
 
-          <Navbar />
+          <LoginNavbar />
           <SignupHeaderSection />
 
           <div className="user">

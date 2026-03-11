@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import Navbar from "../components/Navbar";
+import LoginNavbar from "../components/LoginNavbar";
 import HeaderSection from "../components/HeaderSection";
 import LoginForm from "../components/LoginForm";
 import SocialLogin from "../components/SocialLogin";
@@ -13,7 +13,7 @@ function Login() {
         <div class="landingPage">
             <div class="mainContent">
                 <div class="hero">
-                    <Navbar />
+                    <LoginNavbar />
                     <HeaderSection />
                     <div className="user">
                         <LoginForm />

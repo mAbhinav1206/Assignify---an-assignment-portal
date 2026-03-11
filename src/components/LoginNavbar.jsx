@@ -1,13 +1,13 @@
 import React from "react";
 
-const Navbar = () => {
+const LoginNavbar = () => {
   return (
-    <div className="navbar">
+    <div className="loginnavbar">
       <nav>
         <div className="logoSection">
           <img
             src="/assignifyLogo.png"
-            height="100px"
+            height="70px"
             alt="logo"
           />
         </div>
@@ -16,4 +16,4 @@ const Navbar = () => {
   );
 };
 
-export default Navbar;
+export default LoginNavbar;

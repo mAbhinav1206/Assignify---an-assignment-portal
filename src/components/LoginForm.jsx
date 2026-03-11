@@ -58,7 +58,7 @@ function LoginForm() {
         </div>
 
         <div className="forgotEmail">
-          <u>Forgot email ?</u>
+          <u>Forgot email or password?</u>
         </div>
 
         <div className="submitBtn">

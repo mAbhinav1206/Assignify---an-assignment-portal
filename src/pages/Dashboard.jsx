@@ -1,23 +1,34 @@
 import React from "react";
-import Navbar from "../components/Navbar";
-import Sidebar from "../components/Sidebar";
-import AssignmentList from "../components/AssignmentList";
+import DashboardNavbar from "../components/dashboard/DashboardNavbar";
+import Sidebar from "../components/dashboard/Sidebar";
+import StatsCards from "../components/dashboard/StatsCards";
+import AssignmentList from "../components/dashboard/AssignmentList";
+import "../css/dashboard.css";
 
-function Dashboard() {
+const Dashboard = () => {
   return (
-    <div className="dashboardLayout">
-      <Navbar />
+    <div className="dashboardWrapper">
 
-      <div className="dashboardContainer">
+      <DashboardNavbar />
+
+      <div className="dashboardBody">
+
         <Sidebar />
 
-        <main className="dashboardContent">
-          <h1>Welcome Back 👋</h1>
+        <div className="dashboardContent">
+
+          <h1 className="welcomeTitle">Welcome Back 👋</h1>
+
+          <StatsCards />
+
           <AssignmentList />
-        </main>
+
+        </div>
+
       </div>
+
     </div>
   );
-}
+};
 
 export default Dashboard;

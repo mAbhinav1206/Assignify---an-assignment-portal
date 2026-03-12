@@ -3,107 +3,115 @@ import { useNavigate } from "react-router-dom";
 
 const SignupForm = () => {
 
-    const navigate = useNavigate();
+  const navigate = useNavigate();
 
-    const [email, setEmail] = useState("");
-    const [confirmEmail, setConfirmEmail] = useState("");
-    const [password, setPassword] = useState("");
-    const [confirmPassword, setConfirmPassword] = useState("");
+  const [email, setEmail] = useState("");
+  const [confirmEmail, setConfirmEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
 
-    const handleSignup = async () => {
+  const handleSignup = async () => {
 
+    // validation
+    if (!email || !confirmEmail || !password || !confirmPassword) {
+      alert("Please fill all fields");
+      return;
+    }
 
-        // basic validation
-        if (!email || !confirmEmail || !password || !confirmPassword) {
-            alert("Please fill all fields");
-            return;
-        }
+    if (email !== confirmEmail) {
+      alert("Emails do not match");
+      return;
+    }
 
-        if (email !== confirmEmail) {
-            alert("Emails do not match");
-            return;
-        }
+    if (password !== confirmPassword) {
+      alert("Passwords do not match");
+      return;
+    }
 
-        if (password !== confirmPassword) {
-            alert("Passwords do not match");
-            return;
-        }
+    try {
 
-        try {
+      const res = await fetch("http://localhost:8000/signup", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          email,
+          password
+        })
+      });
 
-            const res = await fetch("http://localhost:8000/signup", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json"
-                },
-                body: JSON.stringify({
-                    email,
-                    password
-                })
-            });
+      const data = await res.json();
 
-            const data = await res.json();
+      console.log(data);
 
-            if (data.message === "User created") {
-                alert("Account created successfully 🎉");
-                navigate("/"); // redirect to login page
-            } else {
-                alert(data.message);
-            }
+      if (data.message === "User created") {
 
-        } catch (error) {
-            console.log(error);
-            alert("Server error");
-        }
+        alert("Account created successfully 🎉");
 
+        // redirect to profile setup
+        navigate("/profile-setup", { state: { email } });
 
-    };
+      } else {
 
-    return (<div className="leftBox"> <div className="userCredentials">
+        alert(data.message);
 
+      }
+
+    } catch (error) {
+
+      console.error(error);
+      alert("Server error");
+
+    }
+
+  };
+
+  return (
+    <div className="leftBox">
+      <div className="userCredentials">
 
         <div className="email inputBox">
-            <input
-                type="email"
-                placeholder="Email"
-                onChange={(e) => setEmail(e.target.value)}
-            />
+          <input
+            type="email"
+            placeholder="Email"
+            onChange={(e) => setEmail(e.target.value)}
+          />
         </div>
 
         <div className="confirmEmail inputBox">
-            <input
-                type="email"
-                placeholder="Confirm email"
-                onChange={(e) => setConfirmEmail(e.target.value)}
-            />
+          <input
+            type="email"
+            placeholder="Confirm email"
+            onChange={(e) => setConfirmEmail(e.target.value)}
+          />
         </div>
 
         <div className="password inputBox">
-            <input
-                type="password"
-                placeholder="Choose a password"
-                onChange={(e) => setPassword(e.target.value)}
-            />
+          <input
+            type="password"
+            placeholder="Choose a password"
+            onChange={(e) => setPassword(e.target.value)}
+          />
         </div>
 
         <div className="confirmPassword inputBox">
-            <input
-                type="password"
-                placeholder="Confirm password"
-                onChange={(e) => setConfirmPassword(e.target.value)}
-            />
+          <input
+            type="password"
+            placeholder="Confirm password"
+            onChange={(e) => setConfirmPassword(e.target.value)}
+          />
         </div>
 
         <div className="submitBtn">
-            <button type="button" onClick={handleSignup}>
-                Sign Up
-            </button>
+          <button type="button" onClick={handleSignup}>
+            Sign Up
+          </button>
         </div>
 
+      </div>
     </div>
-    </div>
-
-    );
+  );
 };
 
 export default SignupForm;

@@ -1,4 +1,3 @@
-import { Link } from "react-router-dom";
 import LoginNavbar from "../components/LoginNavbar";
 import HeaderSection from "../components/HeaderSection";
 import LoginForm from "../components/LoginForm";
@@ -10,9 +9,9 @@ import "../css/Login.css";
 
 function Login() {
     return (
-        <div class="landingPage">
-            <div class="mainContent">
-                <div class="hero">
+        <div className="landingPage">
+            <div className="mainContent">
+                <div className="hero">
                     <LoginNavbar />
                     <HeaderSection />
                     <div className="user">

@@ -181,6 +181,11 @@
   cursor:pointer;
 }
 
+.optionalText{
+  color:#777;
+  font-size:13px;
+}
+
 /* Form */
 
 .profileForm{

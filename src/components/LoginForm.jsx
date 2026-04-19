@@ -1,39 +1,38 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { apiRequest, saveSession } from "../api";
 
 function LoginForm() {
   const navigate = useNavigate();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleLogin = async () => {
+    setError("");
 
     if (!email || !password) {
-      alert("Enter email and password");
+      setError("Enter email and password");
       return;
     }
 
+    setIsSubmitting(true);
+
     try {
-      const res = await fetch("http://localhost:8000/login", {
+      const data = await apiRequest("/login", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
         body: JSON.stringify({ email, password })
       });
 
-      const data = await res.json();
-
-      if (data.message === "Login successful") {
-        navigate("/dashboard");
-      } else {
-        alert(data.message);
-      }
+      saveSession(data);
+      navigate(data.user?.profile?.completed ? "/dashboard" : "/profile-setup");
 
     } catch (error) {
-      console.log(error);
-      alert("Server error");
+      setError(error.message);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -45,6 +44,8 @@ function LoginForm() {
           <input
             type="email"
             placeholder="Email"
+            value={email}
+            autoComplete="email"
             onChange={(e) => setEmail(e.target.value)}
           />
         </div>
@@ -53,17 +54,21 @@ function LoginForm() {
           <input
             type="password"
             placeholder="Password"
+            value={password}
+            autoComplete="current-password"
             onChange={(e) => setPassword(e.target.value)}
           />
         </div>
+
+        {error && <p className="formError">{error}</p>}
 
         <div className="forgotEmail">
           <u>Forgot email or password?</u>
         </div>
 
         <div className="submitBtn">
-          <button type="button" onClick={handleLogin}>
-            Log In
+          <button type="button" onClick={handleLogin} disabled={isSubmitting}>
+            {isSubmitting ? "Logging in..." : "Log In"}
           </button>
         </div>
 

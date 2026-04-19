@@ -1,27 +1,76 @@
 import React, { useState } from "react";
 import LoginNavbar from "../components/LoginNavbar";
-import "../css/profile.css";
+import "../css/Profile.css";
 import { useNavigate } from "react-router-dom";
+import { apiRequest, getStoredUser, saveSession } from "../api";
 
 function ProfileSetup() {
 
     const navigate = useNavigate();
+    const storedUser = getStoredUser();
+    const savedProfile = storedUser?.profile || {};
 
-    const [avatar, setAvatar] = useState(null);
+    const [avatar, setAvatar] = useState(
+        savedProfile.avatar?.startsWith("data:") ? savedProfile.avatar : null
+    );
+    const [form, setForm] = useState({
+        fullName: savedProfile.fullName || "",
+        username: savedProfile.username || "",
+        university: savedProfile.university || "",
+        course: savedProfile.course || "",
+        year: savedProfile.year || ""
+    });
+    const [error, setError] = useState("");
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
     const handleAvatar = (e) => {
         const file = e.target.files[0];
         if (file) {
-            setAvatar(URL.createObjectURL(file));
+            const reader = new FileReader();
+            reader.onload = () => {
+                setAvatar(reader.result);
+                setError("");
+            };
+            reader.readAsDataURL(file);
         }
     };
 
-    const handleSubmit = (e) => {
-        e.preventDefault();   // stop page refresh
+    const handleChange = (e) => {
+        setForm((currentForm) => ({
+            ...currentForm,
+            [e.target.name]: e.target.value
+        }));
+        setError("");
+    };
 
-        // later can save profile data here
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        setError("");
 
-        navigate("/profile-step-2");   // go to step 2
+        if (!form.fullName || !form.username || !form.course || !form.year) {
+            setError("Fill your name, username, course, and year to continue");
+            return;
+        }
+
+        setIsSubmitting(true);
+
+        try {
+            const data = await apiRequest("/profile", {
+                method: "PUT",
+                body: JSON.stringify({
+                    ...form,
+                    avatar,
+                    completed: false
+                })
+            });
+
+            saveSession(data);
+            navigate("/profile-step-2");
+        } catch (error) {
+            setError(error.message);
+        } finally {
+            setIsSubmitting(false);
+        }
     };
 
     return (
@@ -70,10 +119,12 @@ function ProfileSetup() {
                             Upload Photo
                             <input
                                 type="file"
+                                accept="image/*"
                                 hidden
                                 onChange={handleAvatar}
                             />
                         </label>
+                        <span className="optionalText">Optional</span>
 
                     </div>
 
@@ -81,16 +132,38 @@ function ProfileSetup() {
                     <form className="profileForm" onSubmit={handleSubmit}>
 
                         <div className="formRow">
-                            <input placeholder="Full Name" />
-                            <input placeholder="Username" />
+                            <input
+                                name="fullName"
+                                placeholder="Full Name"
+                                value={form.fullName}
+                                autoComplete="name"
+                                onChange={handleChange}
+                            />
+                            <input
+                                name="username"
+                                placeholder="Username"
+                                value={form.username}
+                                autoComplete="username"
+                                onChange={handleChange}
+                            />
                         </div>
 
-                        <input placeholder="University / College" />
+                        <input
+                            name="university"
+                            placeholder="University / College (optional)"
+                            value={form.university}
+                            onChange={handleChange}
+                        />
 
                         <div className="formRow">
-                            <input placeholder="Course" />
-                            <select>
-                                <option>Year of study</option>
+                            <input
+                                name="course"
+                                placeholder="Course"
+                                value={form.course}
+                                onChange={handleChange}
+                            />
+                            <select name="year" value={form.year} onChange={handleChange}>
+                                <option value="">Year of study</option>
                                 <option>1st Year</option>
                                 <option>2nd Year</option>
                                 <option>3rd Year</option>
@@ -98,8 +171,10 @@ function ProfileSetup() {
                             </select>
                         </div>
 
-                        <button type="submit" className="saveBtn">
-                            Save & Continue
+                        {error && <p className="formError">{error}</p>}
+
+                        <button type="submit" className="saveBtn" disabled={isSubmitting}>
+                            {isSubmitting ? "Saving..." : "Save & Continue"}
                         </button>
 
                     </form>

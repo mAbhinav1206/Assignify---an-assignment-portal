@@ -1,5 +1,3 @@
-import React from "react";
-
 const SocialLogin = () => {
     return (
         <div className="rightBox">
@@ -7,8 +5,8 @@ const SocialLogin = () => {
 
                 <div className="googleCard card">
                     <div className="googleIcon icon">
-                        <div class="iconBoxGoogle">
-                            <img src="/google.png" width="100%" />
+                        <div className="iconBoxGoogle">
+                            <img src="/google.png" width="100%" alt="Google" />
                         </div>
                     </div>
                     <div className="boxText">Continue with Google</div>
@@ -16,8 +14,8 @@ const SocialLogin = () => {
 
                 <div className="facebookCard card">
                     <div className="facebookIcon icon">
-                        <div class="iconBoxFB">
-                            <img src="/facebook.png" width="100%" />
+                        <div className="iconBoxFB">
+                            <img src="/facebook.png" width="100%" alt="Facebook" />
                         </div>
                     </div>
                     <div className="boxText">Continue with Facebook</div>

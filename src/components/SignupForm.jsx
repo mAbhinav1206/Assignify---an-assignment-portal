@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { apiRequest, saveSession } from "../api";
 
 const SignupForm = () => {
 
@@ -9,60 +10,50 @@ const SignupForm = () => {
   const [confirmEmail, setConfirmEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [error, setError] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleSignup = async () => {
+    setError("");
 
-    // validation
     if (!email || !confirmEmail || !password || !confirmPassword) {
-      alert("Please fill all fields");
+      setError("Please fill all fields");
       return;
     }
 
     if (email !== confirmEmail) {
-      alert("Emails do not match");
+      setError("Emails do not match");
       return;
     }
 
     if (password !== confirmPassword) {
-      alert("Passwords do not match");
+      setError("Passwords do not match");
       return;
     }
 
-    try {
+    if (password.length < 8) {
+      setError("Password must be at least 8 characters");
+      return;
+    }
 
-      const res = await fetch("http://localhost:8000/signup", {
+    setIsSubmitting(true);
+
+    try {
+      const data = await apiRequest("/signup", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
         body: JSON.stringify({
           email,
           password
         })
       });
 
-      const data = await res.json();
-
-      console.log(data);
-
-      if (data.message === "User created") {
-
-        alert("Account created successfully 🎉");
-
-        // redirect to profile setup
-        navigate("/profile-setup", { state: { email } });
-
-      } else {
-
-        alert(data.message);
-
-      }
+      saveSession(data);
+      navigate("/profile-setup", { state: { email } });
 
     } catch (error) {
-
-      console.error(error);
-      alert("Server error");
-
+      setError(error.message);
+    } finally {
+      setIsSubmitting(false);
     }
 
   };
@@ -75,6 +66,8 @@ const SignupForm = () => {
           <input
             type="email"
             placeholder="Email"
+            value={email}
+            autoComplete="email"
             onChange={(e) => setEmail(e.target.value)}
           />
         </div>
@@ -83,6 +76,8 @@ const SignupForm = () => {
           <input
             type="email"
             placeholder="Confirm email"
+            value={confirmEmail}
+            autoComplete="email"
             onChange={(e) => setConfirmEmail(e.target.value)}
           />
         </div>
@@ -91,6 +86,8 @@ const SignupForm = () => {
           <input
             type="password"
             placeholder="Choose a password"
+            value={password}
+            autoComplete="new-password"
             onChange={(e) => setPassword(e.target.value)}
           />
         </div>
@@ -99,13 +96,17 @@ const SignupForm = () => {
           <input
             type="password"
             placeholder="Confirm password"
+            value={confirmPassword}
+            autoComplete="new-password"
             onChange={(e) => setConfirmPassword(e.target.value)}
           />
         </div>
 
+        {error && <p className="formError">{error}</p>}
+
         <div className="submitBtn">
-          <button type="button" onClick={handleSignup}>
-            Sign Up
+          <button type="button" onClick={handleSignup} disabled={isSubmitting}>
+            {isSubmitting ? "Creating account..." : "Sign Up"}
           </button>
         </div>
 

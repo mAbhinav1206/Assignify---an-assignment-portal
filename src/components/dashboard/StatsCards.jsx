@@ -1,25 +1,24 @@
-import React from "react";
-
-const StatsCards = () => {
-
-  const stats = [
-    { title: "Courses Enrolled", value: 5, icon: "📚" },
-    { title: "Pending Assignments", value: 3, icon: "📝" },
-    { title: "Due This Week", value: 2, icon: "⏳" },
-    { title: "Completion Rate", value: "78%", icon: "📈" }
+const StatsCards = ({ stats, isLoading }) => {
+  const items = [
+    { title: "Courses Enrolled", value: stats?.coursesEnrolled ?? 0, icon: "/curriculum.png" },
+    { title: "Pending Assignments", value: stats?.pendingAssignments ?? 0, icon: "/pendingTasks.png" },
+    { title: "Due This Week", value: stats?.dueThisWeek ?? 0, icon: "/clock.png" },
+    { title: "Completion Rate", value: `${stats?.completionRate ?? 0}%`, icon: "/done.png" }
   ];
 
   return (
 
     <div className="statsGrid">
 
-      {stats.map((item, index) => (
-        <div key={index} className="statCard">
+      {items.map((item) => (
+        <div key={item.title} className="statCard">
 
-          <div className="statIcon">{item.icon}</div>
+          <div className="statIcon">
+            {item.icon.endsWith(".png") ? <img src={item.icon} alt="" /> : item.icon}
+          </div>
 
           <div className="statInfo">
-            <h3>{item.value}</h3>
+            <h3>{isLoading ? "..." : item.value}</h3>
             <p>{item.title}</p>
           </div>
 

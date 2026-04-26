@@ -60,6 +60,11 @@ const userSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
+    role: {
+      type: String,
+      enum: ["student", "teacher"],
+      default: "student",
+    },
     profile: {
       avatar: String,
       fullName: String,
@@ -98,6 +103,15 @@ const assignmentSchema = new mongoose.Schema(
       required: true,
     },
     description: String,
+    visibility: {
+      type: String,
+      enum: ["public", "private"],
+      default: "public",
+    },
+    submitFileType: {
+      type: String,
+      default: "PDF",
+    },
   },
   { timestamps: true }
 );
@@ -149,20 +163,41 @@ const defaultAssignments = [
     course: "Mathematics",
     dueDate: new Date(Date.now() + 24 * 60 * 60 * 1000),
     description: "Complete the worksheet and upload your solution file.",
+    visibility: "public",
+    submitFileType: "PDF",
   },
   {
     title: "Physics Lab Report",
     course: "Physics",
     dueDate: new Date(Date.now() + 4 * 24 * 60 * 60 * 1000),
     description: "Submit your final lab report as a PDF or document.",
+    visibility: "private",
+    submitFileType: "DOCX",
   },
   {
     title: "Computer Science Project",
     course: "Computer Science",
     dueDate: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000),
     description: "Attach your project archive or report.",
+    visibility: "public",
+    submitFileType: "ZIP",
   },
 ];
+
+const courseCatalog = {
+  Mathematics: {
+    description: "Strengthen problem-solving with weekly practice sets, proofs, and guided revision.",
+    thumbnail: "/curriculum.png",
+  },
+  Physics: {
+    description: "Explore concepts, lab reports, and applied reasoning through structured assignments.",
+    thumbnail: "/pendingTasks.png",
+  },
+  "Computer Science": {
+    description: "Build coding fluency, project discipline, and technical writing through practical tasks.",
+    thumbnail: "/search.png",
+  },
+};
 
 const uploadDir = path.join(__dirname, "uploads");
 
@@ -175,13 +210,14 @@ const asyncHandler = (handler) => async (req, res, next) => {
 };
 
 const createToken = (user) =>
-  jwt.sign({ id: user._id.toString(), email: user.email }, JWT_SECRET, {
+  jwt.sign({ id: user._id.toString(), email: user.email, role: user.role }, JWT_SECRET, {
     expiresIn: "7d",
   });
 
 const publicUser = (user) => ({
   id: user._id,
   email: user.email,
+  role: user.role,
   profile: user.profile || {},
 });
 
@@ -203,6 +239,15 @@ const deleteSubmissionForUser = async (userId, assignmentId) => {
 
   return true;
 };
+
+const getCourseMeta = (courseName) => ({
+  description:
+    courseCatalog[courseName]?.description ||
+    `Join ${courseName} to receive assignments, track submissions, and stay aligned with your class schedule.`,
+  thumbnail: courseCatalog[courseName]?.thumbnail || "/curriculum.png",
+});
+
+const decodeCourseValue = (value) => decodeURIComponent(String(value || "").trim());
 
 const authenticate = asyncHandler(async (req, res, next) => {
   const authHeader = req.headers.authorization || "";
@@ -227,6 +272,15 @@ const authenticate = asyncHandler(async (req, res, next) => {
   }
 });
 
+const requireRole = (role) =>
+  asyncHandler(async (req, res, next) => {
+    if (req.user.role !== role) {
+      return res.status(403).json({ message: "You do not have access to this area" });
+    }
+
+    next();
+  });
+
 const seedAssignments = async () => {
   const count = await Assignment.countDocuments();
 
@@ -235,9 +289,28 @@ const seedAssignments = async () => {
   }
 };
 
+const seedTeacherAccount = async () => {
+  const teacherEmail = "teacher@assignify.com";
+  const existingTeacher = await User.findOne({ email: teacherEmail });
+
+  if (!existingTeacher) {
+    const hashedPassword = await bcrypt.hash("teach1234", 10);
+    await User.create({
+      email: teacherEmail,
+      password: hashedPassword,
+      role: "teacher",
+      profile: {
+        fullName: "Assignify Teacher",
+        username: "assignify-teacher",
+        completed: true,
+      },
+    });
+  }
+};
+
 mongoose.connection.once("open", () => {
-  seedAssignments().catch((error) => {
-    console.error("Assignment seed error:", error.message);
+  Promise.all([seedAssignments(), seedTeacherAccount()]).catch((error) => {
+    console.error("Seed error:", error.message);
   });
 });
 
@@ -250,6 +323,7 @@ app.post(
   asyncHandler(async (req, res) => {
     const email = String(req.body.email || "").trim().toLowerCase();
     const password = String(req.body.password || "");
+    const role = req.body.role === "teacher" ? "teacher" : "student";
 
     if (!email || !password) {
       return res.status(400).json({ message: "Please fill all fields" });
@@ -270,7 +344,14 @@ app.post(
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
-    const user = await User.create({ email, password: hashedPassword });
+    const user = await User.create({
+      email,
+      password: hashedPassword,
+      role,
+      profile: {
+        completed: role === "teacher",
+      },
+    });
 
     res.status(201).json({
       message: "User created",
@@ -285,6 +366,7 @@ app.post(
   asyncHandler(async (req, res) => {
     const email = String(req.body.email || "").trim().toLowerCase();
     const password = String(req.body.password || "");
+    const role = req.body.role ? String(req.body.role) : "";
 
     if (!email || !password) {
       return res.status(400).json({ message: "Please enter email and password" });
@@ -300,6 +382,10 @@ app.post(
 
     if (!isMatch) {
       return res.status(401).json({ message: "Invalid email or password" });
+    }
+
+    if (role && user.role !== role) {
+      return res.status(403).json({ message: `This account is not registered as a ${role}` });
     }
 
     res.json({
@@ -380,6 +466,8 @@ app.get(
           course: assignment.course,
           dueDate: assignment.dueDate,
           description: assignment.description,
+          visibility: assignment.visibility,
+          submitFileType: assignment.submitFileType,
           submission: submission
             ? {
                 fileName: submission.fileName,
@@ -546,6 +634,347 @@ app.get(
         completionRate,
       },
     });
+  })
+);
+
+app.get(
+  "/teacher/overview",
+  authenticate,
+  requireRole("teacher"),
+  asyncHandler(async (req, res) => {
+    const [students, assignments, submissions] = await Promise.all([
+      User.find({ role: "student" }),
+      Assignment.find().sort({ createdAt: -1 }),
+      Submission.find().populate("user assignment"),
+    ]);
+
+    const averageCompletion =
+      students.length === 0 || assignments.length === 0
+        ? 0
+        : Math.round((submissions.length / (students.length * assignments.length)) * 100);
+
+    res.json({
+      stats: {
+        totalStudents: students.length,
+        activeAssignments: assignments.length,
+        totalSubmissions: submissions.length,
+        averageCompletion,
+      },
+      teacher: publicUser(req.user),
+    });
+  })
+);
+
+app.get(
+  "/teacher/students",
+  authenticate,
+  requireRole("teacher"),
+  asyncHandler(async (req, res) => {
+    const [students, assignments, submissions] = await Promise.all([
+      User.find({ role: "student" }).sort({ createdAt: -1 }),
+      Assignment.find(),
+      Submission.find().populate("assignment"),
+    ]);
+
+    const submissionsByStudent = new Map();
+
+    submissions.forEach((submission) => {
+      const studentId = submission.user.toString();
+      const current = submissionsByStudent.get(studentId) || [];
+      current.push(submission);
+      submissionsByStudent.set(studentId, current);
+    });
+
+    res.json({
+      students: students.map((student) => {
+        const studentSubmissions = submissionsByStudent.get(student._id.toString()) || [];
+        const completionRate =
+          assignments.length === 0
+            ? 0
+            : Math.round((studentSubmissions.length / assignments.length) * 100);
+
+        return {
+          id: student._id,
+          email: student.email,
+          profile: student.profile || {},
+          completionRate,
+          submittedCount: studentSubmissions.length,
+          pendingCount: Math.max(assignments.length - studentSubmissions.length, 0),
+          recentSubmission: studentSubmissions
+            .sort((a, b) => new Date(b.submittedAt) - new Date(a.submittedAt))[0]
+            ? {
+                assignmentTitle: studentSubmissions
+                  .sort((a, b) => new Date(b.submittedAt) - new Date(a.submittedAt))[0]
+                  .assignment?.title,
+                submittedAt: studentSubmissions
+                  .sort((a, b) => new Date(b.submittedAt) - new Date(a.submittedAt))[0]
+                  .submittedAt,
+              }
+            : null,
+        };
+      }),
+    });
+  })
+);
+
+app.get(
+  "/teacher/courses",
+  authenticate,
+  requireRole("teacher"),
+  asyncHandler(async (req, res) => {
+    const [students, assignments] = await Promise.all([
+      User.find({ role: "student" }),
+      Assignment.find(),
+    ]);
+
+    const courseNames = new Set();
+
+    students.forEach((student) => {
+      if (student.profile?.course) {
+        courseNames.add(student.profile.course);
+      }
+    });
+
+    assignments.forEach((assignment) => {
+      if (assignment.course) {
+        courseNames.add(assignment.course);
+      }
+    });
+
+    const courses = Array.from(courseNames)
+      .sort((a, b) => a.localeCompare(b))
+      .map((courseName) => ({
+        name: courseName,
+        enrolledCount: students.filter((student) => student.profile?.course === courseName).length,
+      }));
+
+    res.json({ courses });
+  })
+);
+
+app.get(
+  "/teacher/courses/:courseName/students",
+  authenticate,
+  requireRole("teacher"),
+  asyncHandler(async (req, res) => {
+    const courseName = decodeCourseValue(req.params.courseName);
+    const [students, submissions] = await Promise.all([
+      User.find({ role: "student", "profile.course": courseName }).sort({ createdAt: -1 }),
+      Submission.find().populate("assignment"),
+    ]);
+
+    const studentPayload = students.map((student) => {
+      const studentSubmissions = submissions
+        .filter(
+          (submission) =>
+            submission.user.toString() === student._id.toString() &&
+            submission.assignment?.course === courseName
+        )
+        .sort((a, b) => new Date(b.submittedAt) - new Date(a.submittedAt));
+
+      return {
+        id: student._id,
+        email: student.email,
+        profile: student.profile || {},
+        submissions: studentSubmissions.map((submission) => ({
+          id: submission._id,
+          assignmentTitle: submission.assignment?.title,
+          fileName: submission.fileName,
+          submittedAt: submission.submittedAt,
+        })),
+      };
+    });
+
+    res.json({
+      course: courseName,
+      students: studentPayload,
+    });
+  })
+);
+
+app.delete(
+  "/teacher/courses/:courseName/students/:studentId",
+  authenticate,
+  requireRole("teacher"),
+  asyncHandler(async (req, res) => {
+    const courseName = decodeCourseValue(req.params.courseName);
+    const student = await User.findOne({
+      _id: req.params.studentId,
+      role: "student",
+      "profile.course": courseName,
+    });
+
+    if (!student) {
+      return res.status(404).json({ message: "Student not found in this course" });
+    }
+
+    student.profile = {
+      ...(student.profile?.toObject?.() || student.profile || {}),
+      course: "",
+    };
+
+    await student.save();
+
+    res.json({ message: "Student removed from course" });
+  })
+);
+
+app.post(
+  "/courses/join",
+  authenticate,
+  requireRole("student"),
+  asyncHandler(async (req, res) => {
+    const courseName = String(req.body.course || "").trim();
+
+    if (!courseName) {
+      return res.status(400).json({ message: "Course name is required" });
+    }
+
+    req.user.profile = {
+      ...(req.user.profile?.toObject?.() || req.user.profile || {}),
+      course: courseName,
+    };
+
+    await req.user.save();
+
+    res.json({
+      message: "Course joined",
+      user: publicUser(req.user),
+    });
+  })
+);
+
+app.get(
+  "/courses/:courseName/details",
+  authenticate,
+  requireRole("student"),
+  asyncHandler(async (req, res) => {
+    const courseName = decodeCourseValue(req.params.courseName);
+    const courseMeta = getCourseMeta(courseName);
+    const assignmentCount = await Assignment.countDocuments({ course: courseName });
+    const isEnrolled = req.user.profile?.course === courseName;
+
+    res.json({
+      course: {
+        name: courseName,
+        description: courseMeta.description,
+        thumbnail: courseMeta.thumbnail,
+        assignmentCount,
+        isEnrolled,
+      },
+    });
+  })
+);
+
+app.get(
+  "/teacher/assignments",
+  authenticate,
+  requireRole("teacher"),
+  asyncHandler(async (req, res) => {
+    const [assignments, students, submissions] = await Promise.all([
+      Assignment.find().sort({ dueDate: 1 }),
+      User.find({ role: "student" }),
+      Submission.find().populate("user"),
+    ]);
+
+    const submissionsByAssignment = new Map();
+
+    submissions.forEach((submission) => {
+      const assignmentId = submission.assignment.toString();
+      const current = submissionsByAssignment.get(assignmentId) || [];
+      current.push(submission);
+      submissionsByAssignment.set(assignmentId, current);
+    });
+
+    res.json({
+      assignments: assignments.map((assignment) => {
+        const assignmentSubmissions = submissionsByAssignment.get(assignment._id.toString()) || [];
+
+        return {
+          id: assignment._id,
+          title: assignment.title,
+          course: assignment.course,
+          dueDate: assignment.dueDate,
+          description: assignment.description,
+          visibility: assignment.visibility,
+          submitFileType: assignment.submitFileType,
+          submissionsCount: assignmentSubmissions.length,
+          pendingCount: Math.max(students.length - assignmentSubmissions.length, 0),
+          students: assignmentSubmissions.map((submission) => ({
+            id: submission.user?._id,
+            name:
+              submission.user?.profile?.fullName ||
+              submission.user?.profile?.username ||
+              submission.user?.email,
+            email: submission.user?.email,
+            fileName: submission.fileName,
+            submittedAt: submission.submittedAt,
+          })),
+        };
+      }),
+    });
+  })
+);
+
+app.post(
+  "/teacher/assignments",
+  authenticate,
+  requireRole("teacher"),
+  asyncHandler(async (req, res) => {
+    const title = String(req.body.title || "").trim();
+    const course = String(req.body.course || "").trim();
+    const dueDate = req.body.dueDate;
+    const description = String(req.body.description || "").trim();
+    const visibility = String(req.body.visibility || "public").toLowerCase();
+    const submitFileType = String(req.body.submitFileType || "PDF").trim();
+
+    if (!title || !course || !dueDate) {
+      return res.status(400).json({ message: "Title, course, and due date are required" });
+    }
+
+    if (!["public", "private"].includes(visibility)) {
+      return res.status(400).json({ message: "Visibility must be public or private" });
+    }
+
+    const assignment = await Assignment.create({
+      title,
+      course,
+      dueDate,
+      description,
+      visibility,
+      submitFileType,
+    });
+
+    res.status(201).json({
+      message: "Assignment created",
+      assignment,
+    });
+  })
+);
+
+app.delete(
+  "/teacher/assignments/:assignmentId",
+  authenticate,
+  requireRole("teacher"),
+  asyncHandler(async (req, res) => {
+    const assignment = await Assignment.findById(req.params.assignmentId);
+
+    if (!assignment) {
+      return res.status(404).json({ message: "Assignment not found" });
+    }
+
+    const relatedSubmissions = await Submission.find({ assignment: assignment._id });
+
+    relatedSubmissions.forEach((submission) => {
+      if (submission.filePath && fs.existsSync(submission.filePath)) {
+        fs.unlinkSync(submission.filePath);
+      }
+    });
+
+    await Submission.deleteMany({ assignment: assignment._id });
+    await assignment.deleteOne();
+
+    res.json({ message: "Assignment deleted" });
   })
 );
 

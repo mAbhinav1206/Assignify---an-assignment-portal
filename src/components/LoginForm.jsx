@@ -1,10 +1,12 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { apiRequest, saveSession } from "../api";
+import { getStoredSettings } from "../settings";
 
 function LoginForm() {
   const navigate = useNavigate();
 
+  const [mode, setMode] = useState("student");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -23,11 +25,20 @@ function LoginForm() {
     try {
       const data = await apiRequest("/login", {
         method: "POST",
-        body: JSON.stringify({ email, password })
+        body: JSON.stringify({ email, password, role: mode })
       });
 
       saveSession(data);
-      navigate(data.user?.profile?.completed ? "/dashboard" : "/profile-setup");
+      const settings = getStoredSettings();
+      navigate(
+        data.user?.role === "teacher"
+          ? "/teacher"
+          : data.user?.profile?.completed
+            ? settings.autoOpenDashboard
+              ? "/dashboard"
+              : "/profile"
+            : "/profile-setup"
+      );
 
     } catch (error) {
       setError(error.message);
@@ -39,6 +50,23 @@ function LoginForm() {
   return (
     <div className="leftBox">
       <div className="userCredentials">
+
+        <div className="authModeSwitch">
+          <button
+            className={`authModeBtn ${mode === "student" ? "authModeActive" : ""}`}
+            type="button"
+            onClick={() => setMode("student")}
+          >
+            Student Login
+          </button>
+          <button
+            className={`authModeBtn ${mode === "teacher" ? "authModeActive" : ""}`}
+            type="button"
+            onClick={() => setMode("teacher")}
+          >
+            Teacher Login
+          </button>
+        </div>
 
         <div className="email inputBox">
           <input
@@ -71,6 +99,15 @@ function LoginForm() {
             {isSubmitting ? "Logging in..." : "Log In"}
           </button>
         </div>
+
+        {mode === "teacher" && (
+          <div className="teacherSignupLink">
+            Need a teacher account?{" "}
+            <button type="button" onClick={() => navigate("/teacher-signup")}>
+              Sign up here
+            </button>
+          </div>
+        )}
 
       </div>
     </div>

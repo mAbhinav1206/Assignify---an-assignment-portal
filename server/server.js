@@ -38,8 +38,20 @@ const PORT = process.env.PORT || 8000;
 const MONGODB_URI = process.env.MONGODB_URI || "mongodb://127.0.0.1:27017/assignify";
 const JWT_SECRET = process.env.JWT_SECRET || "assignify-dev-secret";
 const CLIENT_ORIGIN = process.env.CLIENT_ORIGIN || "http://localhost:5173";
+const allowedOrigins = CLIENT_ORIGIN.split(",").map((origin) => origin.trim()).filter(Boolean);
 
-app.use(cors({ origin: CLIENT_ORIGIN }));
+app.use(
+  cors({
+    origin(origin, callback) {
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true);
+        return;
+      }
+
+      callback(new Error("This origin is not allowed"));
+    },
+  })
+);
 app.use(express.json({ limit: "10mb" }));
 
 mongoose
@@ -116,6 +128,35 @@ const assignmentSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
+const courseSchema = new mongoose.Schema(
+  {
+    name: {
+      type: String,
+      required: true,
+      unique: true,
+      trim: true,
+    },
+    description: {
+      type: String,
+      default: "",
+    },
+    thumbnail: {
+      type: String,
+      default: "/curriculum.png",
+    },
+    visibility: {
+      type: String,
+      enum: ["public", "private"],
+      default: "public",
+    },
+    archived: {
+      type: Boolean,
+      default: false,
+    },
+  },
+  { timestamps: true }
+);
+
 const submissionSchema = new mongoose.Schema(
   {
     user: {
@@ -155,6 +196,7 @@ submissionSchema.index({ user: 1, assignment: 1 }, { unique: true });
 
 const User = mongoose.model("User", userSchema);
 const Assignment = mongoose.model("Assignment", assignmentSchema);
+const Course = mongoose.model("Course", courseSchema);
 const Submission = mongoose.model("Submission", submissionSchema);
 
 const defaultAssignments = [
@@ -223,6 +265,51 @@ const publicUser = (user) => ({
 
 const safeFileName = (fileName) => fileName.replace(/[^a-zA-Z0-9._-]/g, "_");
 
+const assignmentFileRules = {
+  PDF: {
+    label: "PDF",
+    extensions: [".pdf"],
+    mimeTypes: ["application/pdf"],
+  },
+  DOCX: {
+    label: "DOCX",
+    extensions: [".docx"],
+    mimeTypes: ["application/vnd.openxmlformats-officedocument.wordprocessingml.document"],
+  },
+  PPTX: {
+    label: "PPTX",
+    extensions: [".pptx"],
+    mimeTypes: ["application/vnd.openxmlformats-officedocument.presentationml.presentation"],
+  },
+  ZIP: {
+    label: "ZIP",
+    extensions: [".zip"],
+    mimeTypes: ["application/zip", "application/x-zip-compressed", "multipart/x-zip"],
+  },
+  Image: {
+    label: "image",
+    extensions: [".png", ".jpg", ".jpeg", ".gif", ".webp", ".bmp", ".svg"],
+    mimeTypes: ["image/"],
+  },
+};
+
+const matchesAssignmentFileRule = (fileName, mimeType, submitFileType) => {
+  const rule = assignmentFileRules[submitFileType];
+
+  if (!rule) {
+    return true;
+  }
+
+  const normalizedFileName = String(fileName || "").trim().toLowerCase();
+  const normalizedMimeType = String(mimeType || "").trim().toLowerCase();
+  const extensionMatches = rule.extensions.some((extension) => normalizedFileName.endsWith(extension));
+  const mimeMatches = rule.mimeTypes.some((type) =>
+    type.endsWith("/") ? normalizedMimeType.startsWith(type) : normalizedMimeType === type
+  );
+
+  return extensionMatches && mimeMatches;
+};
+
 const deleteSubmissionForUser = async (userId, assignmentId) => {
   const submission = await Submission.findOneAndDelete({
     user: userId,
@@ -248,6 +335,35 @@ const getCourseMeta = (courseName) => ({
 });
 
 const decodeCourseValue = (value) => decodeURIComponent(String(value || "").trim());
+
+const ensureCourseRecord = async (courseName, overrides = {}) => {
+  const trimmedCourseName = String(courseName || "").trim();
+
+  if (!trimmedCourseName) {
+    return null;
+  }
+
+  const defaultMeta = getCourseMeta(trimmedCourseName);
+
+  return Course.findOneAndUpdate(
+    { name: trimmedCourseName },
+    {
+      $setOnInsert: {
+        name: trimmedCourseName,
+        description: defaultMeta.description,
+        thumbnail: defaultMeta.thumbnail,
+        visibility: "public",
+      },
+      $set: Object.fromEntries(
+        Object.entries(overrides).filter(([, value]) => value !== undefined)
+      ),
+    },
+    {
+      upsert: true,
+      new: true,
+    }
+  );
+};
 
 const authenticate = asyncHandler(async (req, res, next) => {
   const authHeader = req.headers.authorization || "";
@@ -289,6 +405,21 @@ const seedAssignments = async () => {
   }
 };
 
+const seedCourses = async () => {
+  const courseNames = Array.from(
+    new Set([...Object.keys(courseCatalog), ...defaultAssignments.map((assignment) => assignment.course)])
+  );
+
+  await Promise.all(
+    courseNames.map((courseName) =>
+      ensureCourseRecord(courseName, {
+        description: getCourseMeta(courseName).description,
+        thumbnail: getCourseMeta(courseName).thumbnail,
+      })
+    )
+  );
+};
+
 const seedTeacherAccount = async () => {
   const teacherEmail = "teacher@assignify.com";
   const existingTeacher = await User.findOne({ email: teacherEmail });
@@ -309,13 +440,17 @@ const seedTeacherAccount = async () => {
 };
 
 mongoose.connection.once("open", () => {
-  Promise.all([seedAssignments(), seedTeacherAccount()]).catch((error) => {
+  Promise.all([seedAssignments(), seedCourses(), seedTeacherAccount()]).catch((error) => {
     console.error("Seed error:", error.message);
   });
 });
 
 app.get("/", (req, res) => {
   res.json({ message: "Assignify API running" });
+});
+
+app.get("/health", (req, res) => {
+  res.json({ status: "ok", service: "assignify-api" });
 });
 
 app.post(
@@ -447,8 +582,9 @@ app.get(
   "/assignments",
   authenticate,
   asyncHandler(async (req, res) => {
+    const now = new Date();
     const [assignments, submissions] = await Promise.all([
-      Assignment.find().sort({ dueDate: 1 }),
+      Assignment.find({ dueDate: { $gte: now } }).sort({ dueDate: 1 }),
       Submission.find({ user: req.user._id }),
     ]);
 
@@ -509,6 +645,12 @@ app.post(
 
     if (!assignment) {
       return res.status(404).json({ message: "Assignment not found" });
+    }
+
+    if (!matchesAssignmentFileRule(fileName, mimeType, assignment.submitFileType)) {
+      return res.status(400).json({
+        message: `Only ${assignment.submitFileType} files can be submitted for this assignment`,
+      });
     }
 
     fs.mkdirSync(uploadDir, { recursive: true });
@@ -722,12 +864,13 @@ app.get(
   authenticate,
   requireRole("teacher"),
   asyncHandler(async (req, res) => {
-    const [students, assignments] = await Promise.all([
+    const [students, assignments, existingCourses] = await Promise.all([
       User.find({ role: "student" }),
       Assignment.find(),
+      Course.find({ archived: false }).sort({ name: 1 }),
     ]);
 
-    const courseNames = new Set();
+    const courseNames = new Set(existingCourses.map((course) => course.name));
 
     students.forEach((student) => {
       if (student.profile?.course) {
@@ -741,14 +884,58 @@ app.get(
       }
     });
 
-    const courses = Array.from(courseNames)
-      .sort((a, b) => a.localeCompare(b))
-      .map((courseName) => ({
-        name: courseName,
-        enrolledCount: students.filter((student) => student.profile?.course === courseName).length,
-      }));
+    const courses = await Promise.all(
+      Array.from(courseNames)
+        .sort((a, b) => a.localeCompare(b))
+        .map(async (courseName) => {
+          const courseRecord =
+            existingCourses.find((course) => course.name === courseName) ||
+            (await ensureCourseRecord(courseName));
+
+          return {
+            name: courseName,
+            description: courseRecord?.description || getCourseMeta(courseName).description,
+            thumbnail: courseRecord?.thumbnail || getCourseMeta(courseName).thumbnail,
+            visibility: courseRecord?.visibility || "public",
+            enrolledCount: students.filter((student) => student.profile?.course === courseName).length,
+            assignmentCount: assignments.filter((assignment) => assignment.course === courseName).length,
+          };
+        })
+    );
 
     res.json({ courses });
+  })
+);
+
+app.post(
+  "/teacher/courses",
+  authenticate,
+  requireRole("teacher"),
+  asyncHandler(async (req, res) => {
+    const name = String(req.body.name || "").trim();
+    const description = String(req.body.description || "").trim();
+    const thumbnail = String(req.body.thumbnail || "").trim();
+    const visibility = String(req.body.visibility || "public").toLowerCase();
+
+    if (!name) {
+      return res.status(400).json({ message: "Course name is required" });
+    }
+
+    if (!["public", "private"].includes(visibility)) {
+      return res.status(400).json({ message: "Visibility must be public or private" });
+    }
+
+    const course = await ensureCourseRecord(name, {
+      description: description || getCourseMeta(name).description,
+      thumbnail: thumbnail || getCourseMeta(name).thumbnail,
+      visibility,
+      archived: false,
+    });
+
+    res.status(201).json({
+      message: "Course saved",
+      course,
+    });
   })
 );
 
@@ -850,7 +1037,12 @@ app.get(
   requireRole("student"),
   asyncHandler(async (req, res) => {
     const courseName = decodeCourseValue(req.params.courseName);
-    const courseMeta = getCourseMeta(courseName);
+    const courseRecord = await Course.findOne({ name: courseName, archived: false });
+    const courseMeta = {
+      description: courseRecord?.description || getCourseMeta(courseName).description,
+      thumbnail: courseRecord?.thumbnail || getCourseMeta(courseName).thumbnail,
+      visibility: courseRecord?.visibility || "public",
+    };
     const assignmentCount = await Assignment.countDocuments({ course: courseName });
     const isEnrolled = req.user.profile?.course === courseName;
 
@@ -861,6 +1053,7 @@ app.get(
         thumbnail: courseMeta.thumbnail,
         assignmentCount,
         isEnrolled,
+        visibility: courseMeta.visibility,
       },
     });
   })
@@ -886,32 +1079,40 @@ app.get(
       submissionsByAssignment.set(assignmentId, current);
     });
 
-    res.json({
-      assignments: assignments.map((assignment) => {
-        const assignmentSubmissions = submissionsByAssignment.get(assignment._id.toString()) || [];
+    const now = new Date();
+    const mappedAssignments = assignments.map((assignment) => {
+      const assignmentSubmissions = submissionsByAssignment.get(assignment._id.toString()) || [];
 
-        return {
-          id: assignment._id,
-          title: assignment.title,
-          course: assignment.course,
-          dueDate: assignment.dueDate,
-          description: assignment.description,
-          visibility: assignment.visibility,
-          submitFileType: assignment.submitFileType,
-          submissionsCount: assignmentSubmissions.length,
-          pendingCount: Math.max(students.length - assignmentSubmissions.length, 0),
-          students: assignmentSubmissions.map((submission) => ({
-            id: submission.user?._id,
-            name:
-              submission.user?.profile?.fullName ||
-              submission.user?.profile?.username ||
-              submission.user?.email,
-            email: submission.user?.email,
-            fileName: submission.fileName,
-            submittedAt: submission.submittedAt,
-          })),
-        };
-      }),
+      return {
+        id: assignment._id,
+        title: assignment.title,
+        course: assignment.course,
+        dueDate: assignment.dueDate,
+        description: assignment.description,
+        visibility: assignment.visibility,
+        submitFileType: assignment.submitFileType,
+        submissionsCount: assignmentSubmissions.length,
+        pendingCount: Math.max(students.length - assignmentSubmissions.length, 0),
+        students: assignmentSubmissions.map((submission) => ({
+          id: submission.user?._id,
+          name:
+            submission.user?.profile?.fullName ||
+            submission.user?.profile?.username ||
+            submission.user?.email,
+          email: submission.user?.email,
+          fileName: submission.fileName,
+          submittedAt: submission.submittedAt,
+        })),
+      };
+    });
+
+    res.json({
+      activeAssignments: mappedAssignments.filter(
+        (assignment) => new Date(assignment.dueDate) >= now
+      ),
+      pastAssignments: mappedAssignments.filter(
+        (assignment) => new Date(assignment.dueDate) < now
+      ),
     });
   })
 );
@@ -936,14 +1137,29 @@ app.post(
       return res.status(400).json({ message: "Visibility must be public or private" });
     }
 
+    const parsedDueDate = new Date(dueDate);
+
+    if (Number.isNaN(parsedDueDate.getTime())) {
+      return res.status(400).json({ message: "Enter a valid due date" });
+    }
+
     const assignment = await Assignment.create({
       title,
       course,
-      dueDate,
+      dueDate: parsedDueDate,
       description,
       visibility,
       submitFileType,
     });
+
+    try {
+      await ensureCourseRecord(course, {
+        visibility,
+        description: description || undefined,
+      });
+    } catch (courseError) {
+      console.error("Course sync error:", courseError.message);
+    }
 
     res.status(201).json({
       message: "Assignment created",

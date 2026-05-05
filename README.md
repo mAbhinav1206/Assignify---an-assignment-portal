@@ -1,16 +1,91 @@
-# React + Vite
+# Assignify
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Assignify is a full-stack assignment portal for students and teachers.
 
-Currently, two official plugins are available:
+Students can:
+- sign up, log in, and finish profile setup
+- join courses from shareable links
+- submit, re-submit, download, and delete assignment files
+- track progress across dashboard, courses, calendar, and progress pages
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+Teachers can:
+- sign up and log in with teacher accounts
+- manage course cards, join visibility, and shareable join links
+- review enrolled students by course
+- post assignments with deadlines, file-type expectations, and visibility
+- review active submissions and past assignment history
 
-## React Compiler
+## Stack
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+- Frontend: React + Vite + React Router
+- Backend: Express + MongoDB + Mongoose
+- Auth: JWT
 
-## Expanding the ESLint configuration
+## Local setup
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+### 1. Frontend
+
+```bash
+cd "/Users/abhinav/Github/Assignment Portal/Assignify"
+cp .env.example .env
+npm install
+npm run dev
+```
+
+### 2. Backend
+
+```bash
+cd "/Users/abhinav/Github/Assignment Portal/Assignify/server"
+cp .env.example .env
+npm install
+npm run start
+```
+
+Default local URLs:
+- frontend: `http://localhost:5173`
+- backend: `http://localhost:8000`
+
+## Environment variables
+
+### Frontend
+
+`VITE_API_URL`
+- Example: `http://localhost:8000`
+
+### Backend
+
+`PORT`
+- Example: `8000`
+
+`MONGODB_URI`
+- Example: `mongodb://127.0.0.1:27017/assignify`
+
+`JWT_SECRET`
+- Use a long random secret in production
+
+`CLIENT_ORIGIN`
+- Comma-separated allowed frontend origins
+- Example: `http://localhost:5173,https://assignify-web.onrender.com`
+
+## Seeded teacher account
+
+The backend seeds a teacher account automatically:
+
+- email: `teacher@assignify.com`
+- password: `teach1234`
+
+## Production notes
+
+- The backend exposes a health endpoint at `/health`
+- CORS accepts multiple origins through `CLIENT_ORIGIN`
+- Frontend routing needs SPA rewrites enabled
+- The included [render.yaml](/Users/abhinav/Github/Assignment%20Portal/Assignify/render.yaml) is set up for deploying the frontend and backend on Render
+
+## Build checks
+
+```bash
+cd "/Users/abhinav/Github/Assignment Portal/Assignify"
+npm run lint
+npm run build
+node --check server/server.js
+```

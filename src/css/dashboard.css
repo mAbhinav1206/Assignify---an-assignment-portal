@@ -74,9 +74,32 @@ body{
     box-shadow: 0 4px 10px rgba(42, 145, 255, 0.12);
 }
 
+body.dark-theme .notificationBtn {
+    background: #111827;
+    border-color: #334155;
+}
+
 .notificationBtn img {
     height: 22px;
     width: 22px;
+}
+
+.notificationBadge {
+    align-items: center;
+    background: #dc2626;
+    border: 2px solid white;
+    border-radius: 999px;
+    color: white;
+    display: inline-flex;
+    font-size: 11px;
+    font-weight: 700;
+    height: 18px;
+    justify-content: center;
+    min-width: 18px;
+    padding: 0 4px;
+    position: absolute;
+    right: -6px;
+    top: -6px;
 }
 
 .notificationWrapper {
@@ -131,6 +154,29 @@ body{
     padding: 4px 8px;
 }
 
+.notificationActions {
+    display: flex;
+    gap: 8px;
+    margin-top: 12px;
+}
+
+.notificationActionBtn {
+    background: #f8fbff;
+    border: 1px solid #dbe4f0;
+    border-radius: 6px;
+    color: #2563eb;
+    cursor: pointer;
+    font: inherit;
+    font-size: 12px;
+    font-weight: 700;
+    padding: 6px 10px;
+}
+
+.notificationActionBtn:disabled {
+    color: #94a3b8;
+    cursor: not-allowed;
+}
+
 .notificationList {
     display: grid;
     gap: 10px;
@@ -143,8 +189,11 @@ body{
     border: 1px solid #eef2ff;
     border-radius: 8px;
     display: flex;
+    font: inherit;
     gap: 10px;
     padding: 10px;
+    text-align: left;
+    width: 100%;
 }
 
 .notificationItem strong {
@@ -164,6 +213,14 @@ body{
 .notificationItem span {
     color: #64748b;
     font-size: 12px;
+}
+
+.notificationItemRead {
+    opacity: 0.72;
+}
+
+.notificationItemRead .notificationDot {
+    background: #cbd5e1;
 }
 
 .notificationDot {
@@ -238,7 +295,8 @@ body{
 }
 
 .menuItem:hover {
-    background: #f2f6ff
+    background: #f2f6ff;
+     color: #2a91ff;
 }
 
 .active {
@@ -268,12 +326,45 @@ body{
     color: #1f2937;
     cursor: pointer;
     font-weight: 700;
-    text-align: center;
+    text-align: left;
 }
 
 .sidebarUserName:hover {
     border-color: #2a91ff;
     color: #2a91ff;
+}
+
+.sidebarUserInfo {
+    align-items: center;
+    display: flex;
+    gap: 10px;
+}
+
+.sidebarAvatar {
+    align-items: center;
+    background: #dbeafe;
+    border-radius: 50%;
+    color: #1e3a8a;
+    display: inline-flex;
+    flex: 0 0 34px;
+    font-size: 13px;
+    font-weight: 700;
+    height: 34px;
+    justify-content: center;
+    overflow: hidden;
+    width: 34px;
+}
+
+.sidebarAvatar img {
+    height: 100%;
+    object-fit: cover;
+    width: 100%;
+}
+
+.sidebarUserLabel {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 /* ---------- Content ---------- */
@@ -292,8 +383,23 @@ body{
     overflow: hidden;
 }
 
+.studentContent {
+    overflow-y: auto;
+    padding: 24px 28px;
+}
+
 .profileContent {
     padding: 20px 28px;
+}
+
+.settingsContent {
+    overflow-y: auto;
+    padding: 24px 28px;
+}
+
+.teacherContent {
+    overflow-y: auto;
+    padding: 24px 28px;
 }
 
 .welcomeTitle {
@@ -415,6 +521,790 @@ body{
     flex-wrap: wrap;
 }
 
+.teacherHero {
+    margin-bottom: 18px;
+}
+
+.teacherIntro {
+    color: #64748b;
+    font-size: 15px;
+}
+
+.teacherStatsGrid {
+    display: grid;
+    gap: 14px;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    margin-bottom: 18px;
+}
+
+.teacherStatCard,
+.teacherPanel {
+    background: rgba(255,255,255,0.92);
+    border: 1px solid rgba(0,0,0,0.06);
+    border-radius: 8px;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.05);
+}
+
+.teacherStatCard {
+    padding: 18px;
+}
+
+.teacherStatCard span {
+    color: #64748b;
+    display: block;
+    font-size: 13px;
+    margin-bottom: 8px;
+}
+
+.teacherStatCard strong {
+    color: #111827;
+    font-size: 24px;
+}
+
+.teacherPanel {
+    margin-bottom: 18px;
+    padding: 22px;
+}
+
+.teacherSectionHeader {
+    align-items: flex-start;
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 16px;
+}
+
+.teacherSectionHeader h2 {
+    font-size: 19px;
+    margin-bottom: 4px;
+}
+
+.teacherSectionHeader p {
+    color: #64748b;
+    font-size: 14px;
+}
+
+.teacherAssignmentForm {
+    display: grid;
+    gap: 12px;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.teacherCourseToolbar {
+    display: grid;
+    gap: 14px;
+    grid-template-columns: minmax(220px, 280px) 1fr;
+}
+
+.teacherSelectField {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.teacherSelectField span,
+.teacherJoinBox span {
+    color: #1f2937;
+    font-size: 14px;
+    font-weight: 700;
+}
+
+.teacherSelectField select,
+.teacherJoinRow input {
+    background: #f8fbff;
+    border: 1px solid #dbe4f0;
+    border-radius: 8px;
+    font: inherit;
+    padding: 12px 14px;
+}
+
+.teacherJoinBox {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.teacherJoinRow {
+    display: grid;
+    gap: 10px;
+    grid-template-columns: 1fr auto;
+}
+
+.teacherCopyMessage {
+    color: #2563eb;
+    font-size: 13px;
+}
+
+.courseJoinCard {
+    max-width: 460px;
+}
+
+.courseJoinMedia {
+    align-items: center;
+    background: #f8fbff;
+    border: 1px solid #e5eefb;
+    border-radius: 8px;
+    display: flex;
+    height: 130px;
+    justify-content: center;
+    margin-bottom: 18px;
+    overflow: hidden;
+}
+
+.courseJoinMedia img {
+    height: 64px;
+    opacity: 0.78;
+    width: 64px;
+}
+
+.courseJoinDetails {
+    margin-bottom: 16px;
+}
+
+.courseJoinDescription {
+    color: #64748b;
+    font-size: 14px;
+    line-height: 1.5;
+    margin-top: 12px;
+}
+
+.teacherAssignmentForm input,
+.teacherAssignmentForm textarea,
+.teacherAssignmentForm select {
+    background: #f8fbff;
+    border: 1px solid #dbe4f0;
+    border-radius: 8px;
+    font: inherit;
+    padding: 12px 14px;
+}
+
+.teacherAssignmentForm textarea {
+    grid-column: 1 / -1;
+    min-height: 90px;
+    resize: vertical;
+}
+
+.teacherCourseHint {
+    align-self: center;
+    color: #64748b;
+    font-size: 13px;
+}
+
+.teacherPrimaryBtn {
+    justify-self: start;
+}
+
+.teacherAssignmentList,
+.teacherStudentsGrid {
+    display: grid;
+    gap: 14px;
+}
+
+.teacherCourseGrid {
+    display: grid;
+    gap: 14px;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+}
+
+.teacherAnalyticsGrid {
+    display: grid;
+    gap: 18px;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    margin-bottom: 18px;
+}
+
+.teacherChartPanel {
+    min-height: 100%;
+}
+
+.teacherChartList {
+    display: grid;
+    gap: 14px;
+}
+
+.teacherChartRow {
+    display: grid;
+    gap: 8px;
+}
+
+.teacherChartRowTop {
+    align-items: center;
+    display: flex;
+    gap: 12px;
+    justify-content: space-between;
+}
+
+.teacherChartRowTop strong {
+    font-size: 14px;
+}
+
+.teacherChartRowTop span,
+.teacherChartMeta {
+    color: #64748b;
+    font-size: 13px;
+}
+
+.teacherChartTrack {
+    background: #eaf1fb;
+    border-radius: 999px;
+    height: 10px;
+    overflow: hidden;
+}
+
+.teacherChartFill {
+    background: linear-gradient(90deg, #60a5fa, #2563eb);
+    border-radius: inherit;
+    height: 100%;
+}
+
+.teacherChartTrackSuccess {
+    background: #e8f7ef;
+}
+
+.teacherChartFillSuccess {
+    background: linear-gradient(90deg, #4ade80, #16a34a);
+}
+
+.teacherLineChartCard {
+    background: #f8fbff;
+    border: 1px solid #e5eefb;
+    border-radius: 8px;
+    padding: 16px;
+}
+
+.teacherLineChart {
+    display: block;
+    height: auto;
+    width: 100%;
+}
+
+.teacherLineChartStroke {
+    stroke: #2563eb;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    stroke-width: 4;
+}
+
+.teacherLineChartPoint {
+    fill: white;
+    stroke: #2563eb;
+    stroke-width: 3;
+}
+
+.teacherLineChartLabels {
+    display: grid;
+    gap: 10px;
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+    margin-top: 10px;
+}
+
+.teacherLineChartLabel {
+    text-align: center;
+}
+
+.teacherLineChartLabel strong {
+    display: block;
+    font-size: 15px;
+    margin-bottom: 4px;
+}
+
+.teacherLineChartLabel span {
+    color: #64748b;
+    font-size: 12px;
+}
+
+.teacherCourseCard {
+    background: #f8fbff;
+    border: 1px solid #e5eefb;
+    border-radius: 8px;
+    display: grid;
+    gap: 14px;
+    padding: 18px;
+}
+
+.teacherCourseCardTop {
+    align-items: flex-start;
+    display: flex;
+    gap: 14px;
+}
+
+.teacherCourseIcon {
+    align-items: center;
+    background: white;
+    border: 1px solid #dbe4f0;
+    border-radius: 8px;
+    display: inline-flex;
+    flex: 0 0 62px;
+    height: 62px;
+    justify-content: center;
+    overflow: hidden;
+    width: 62px;
+}
+
+.teacherCourseIcon img {
+    height: 28px;
+    opacity: 0.82;
+    width: 28px;
+}
+
+.teacherCourseBody {
+    min-width: 0;
+}
+
+.teacherCourseTitleRow {
+    align-items: center;
+    display: flex;
+    gap: 10px;
+    justify-content: space-between;
+    margin-bottom: 8px;
+}
+
+.teacherCourseTitleRow h3 {
+    margin: 0;
+}
+
+.teacherCourseBody p {
+    color: #64748b;
+    font-size: 14px;
+    line-height: 1.5;
+}
+
+.teacherCardActions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.teacherAssignmentCard,
+.teacherStudentCard {
+    background: #f8fbff;
+    border: 1px solid #e5eefb;
+    border-radius: 8px;
+    padding: 16px;
+}
+
+.teacherAssignmentTop,
+.teacherStudentHead {
+    align-items: center;
+    display: flex;
+    justify-content: space-between;
+    gap: 16px;
+}
+
+.teacherAssignmentTop h3,
+.teacherStudentHead h3 {
+    margin-bottom: 4px;
+}
+
+.teacherAssignmentTop p,
+.teacherStudentHead p,
+.teacherRecentText {
+    color: #64748b;
+    font-size: 14px;
+}
+
+.teacherAssignmentMeta,
+.teacherStudentStats {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin: 12px 0;
+}
+
+.teacherAssignmentMeta span,
+.teacherStudentStats span {
+    background: white;
+    border: 1px solid #dbe4f0;
+    border-radius: 999px;
+    color: #334155;
+    font-size: 12px;
+    font-weight: 700;
+    padding: 6px 10px;
+}
+
+.teacherSubmissionList {
+    display: grid;
+    gap: 10px;
+}
+
+.teacherHistoryItem {
+    background: #f8fbff;
+    border: 1px solid #e5eefb;
+    border-radius: 8px;
+    padding: 14px 16px;
+}
+
+.teacherHistorySummary {
+    align-items: center;
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    gap: 16px;
+    list-style: none;
+}
+
+.teacherHistorySummary::-webkit-details-marker {
+    display: none;
+}
+
+.teacherHistorySummary strong {
+    display: block;
+    margin-bottom: 4px;
+}
+
+.teacherHistorySummary p {
+    color: #64748b;
+    font-size: 14px;
+}
+
+.teacherHistorySummary span {
+    background: white;
+    border: 1px solid #dbe4f0;
+    border-radius: 999px;
+    color: #334155;
+    font-size: 12px;
+    font-weight: 700;
+    padding: 6px 10px;
+}
+
+.teacherHistoryItem[open] .teacherSubmissionList {
+    margin-top: 12px;
+}
+
+.teacherSubmissionItem {
+    background: white;
+    border: 1px solid #e5eefb;
+    border-radius: 8px;
+    padding: 12px;
+}
+
+.teacherSubmissionItem strong {
+    display: block;
+    margin-bottom: 4px;
+}
+
+.teacherSubmissionItem p,
+.teacherSubmissionItem span {
+    color: #64748b;
+    font-size: 13px;
+}
+
+.teacherDeleteBtn {
+    background: #fff1f2;
+    border: 1px solid #fecdd3;
+    border-radius: 8px;
+    color: #be123c;
+    cursor: pointer;
+    font: inherit;
+    padding: 10px 12px;
+}
+
+.teacherDeleteBtn:hover {
+    background: #ffe4e6;
+}
+
+.teacherStudentRemoveBtn {
+    margin-top: 14px;
+    width: 100%;
+}
+
+.teacherStudentHead {
+    justify-content: flex-start;
+}
+
+.teacherStudentAvatar {
+    align-items: center;
+    background: #dbeafe;
+    border-radius: 50%;
+    color: #1d4ed8;
+    display: inline-flex;
+    flex: 0 0 44px;
+    font-weight: 700;
+    height: 44px;
+    justify-content: center;
+    overflow: hidden;
+    width: 44px;
+}
+
+.teacherStudentAvatar img {
+    height: 100%;
+    object-fit: cover;
+    width: 100%;
+}
+
+.studentHero {
+    margin-bottom: 18px;
+}
+
+.studentIntro {
+    color: #64748b;
+    font-size: 15px;
+}
+
+.studentGrid {
+    display: grid;
+    gap: 16px;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+}
+
+.studentStack {
+    display: grid;
+    gap: 16px;
+}
+
+.studentCard,
+.studentMetricCard,
+.studentTimelineCard,
+.studentTimelineGroup,
+.notFoundCard {
+    background: rgba(255,255,255,0.92);
+    border: 1px solid rgba(0,0,0,0.06);
+    border-radius: 8px;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.05);
+}
+
+.studentCard,
+.studentTimelineGroup {
+    padding: 18px;
+}
+
+.studentMetricCard {
+    padding: 18px;
+}
+
+.studentMetricCard span {
+    color: #64748b;
+    display: block;
+    font-size: 13px;
+    margin-bottom: 8px;
+}
+
+.studentMetricCard strong {
+    color: #111827;
+    font-size: 24px;
+}
+
+.studentStatsGrid {
+    display: grid;
+    gap: 14px;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    margin-bottom: 18px;
+}
+
+.studentCardTop {
+    align-items: flex-start;
+    display: flex;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 16px;
+}
+
+.studentCardTop h3 {
+    margin-bottom: 6px;
+}
+
+.studentCardTop p {
+    color: #64748b;
+    font-size: 14px;
+}
+
+.studentBadge {
+    background: white;
+    border: 1px solid #dbe4f0;
+    border-radius: 999px;
+    color: #334155;
+    font-size: 12px;
+    font-weight: 700;
+    padding: 6px 10px;
+}
+
+.studentBadgePrimary {
+    background: #eef6ff;
+    border-color: #bedaf8;
+    color: #2563eb;
+}
+
+.studentCardActions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.studentList {
+    display: grid;
+    gap: 10px;
+}
+
+.studentListItem {
+    background: #f8fbff;
+    border: 1px solid #e5eefb;
+    border-radius: 8px;
+    padding: 12px;
+}
+
+.studentListItem strong {
+    display: block;
+    margin-bottom: 4px;
+}
+
+.studentListItem span {
+    color: #64748b;
+    font-size: 13px;
+}
+
+.studentTimelineGroup h3 {
+    margin-bottom: 12px;
+}
+
+.studentTimelineList {
+    display: grid;
+    gap: 10px;
+}
+
+.studentTimelineCard {
+    padding: 14px;
+}
+
+.studentTimelineCard strong {
+    display: block;
+    margin-bottom: 4px;
+}
+
+.studentTimelineCard p {
+    color: #64748b;
+    font-size: 13px;
+}
+
+.notFoundPage {
+    align-items: center;
+    display: flex;
+    justify-content: center;
+    min-height: 100vh;
+    padding: 24px;
+}
+
+.notFoundCard {
+    max-width: 420px;
+    padding: 24px;
+    text-align: center;
+}
+
+.notFoundCard h1 {
+    margin-bottom: 10px;
+}
+
+.notFoundCard p {
+    color: #64748b;
+    margin-bottom: 16px;
+}
+
+.settingsHero {
+    margin-bottom: 18px;
+}
+
+.settingsIntro {
+    color: #64748b;
+    font-size: 15px;
+}
+
+.settingsPanel {
+    background: rgba(255,255,255,0.92);
+    border: 1px solid rgba(0,0,0,0.06);
+    border-radius: 8px;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.05);
+    padding: 22px;
+}
+
+.settingsSection h2 {
+    font-size: 18px;
+    margin-bottom: 14px;
+}
+
+.settingsGrid {
+    display: grid;
+    gap: 14px;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+}
+
+.settingsItem,
+.settingsSelectItem {
+    align-items: center;
+    background: #f8fbff;
+    border: 1px solid #e5eefb;
+    border-radius: 8px;
+    display: flex;
+    gap: 16px;
+    justify-content: space-between;
+    min-height: 92px;
+    padding: 16px;
+}
+
+.settingsItem strong,
+.settingsSelectItem span {
+    color: #1f2937;
+    display: block;
+    font-size: 15px;
+    margin-bottom: 6px;
+}
+
+.settingsItem p {
+    color: #64748b;
+    font-size: 13px;
+    line-height: 1.45;
+}
+
+.settingsSelectItem {
+    align-items: flex-start;
+    flex-direction: column;
+}
+
+.settingsSelectItem select {
+    background: white;
+    border: 1px solid #dbe4f0;
+    border-radius: 8px;
+    font: inherit;
+    padding: 10px 12px;
+    width: 100%;
+}
+
+.settingsDivider {
+    background: #eef2ff;
+    height: 1px;
+    margin: 20px 0;
+}
+
+.toggleSwitch {
+    align-items: center;
+    background: #dbe4f0;
+    border: none;
+    border-radius: 999px;
+    cursor: pointer;
+    display: inline-flex;
+    flex: 0 0 auto;
+    height: 32px;
+    justify-content: flex-start;
+    padding: 4px;
+    transition: all 0.2s ease;
+    width: 58px;
+}
+
+.toggleSwitch span {
+    background: white;
+    border-radius: 50%;
+    box-shadow: 0 2px 8px rgba(15, 23, 42, 0.18);
+    display: block;
+    height: 24px;
+    transition: transform 0.2s ease;
+    width: 24px;
+}
+
+.toggleOn {
+    background: #2a91ff;
+}
+
+.toggleOn span {
+    transform: translateX(26px);
+}
+
 /* ---------- Stats Cards ---------- */
 
 .statsGrid {
@@ -492,6 +1382,13 @@ body{
     0 4px 10px rgba(0,0,0,0.06);
 }
 
+.assignmentCardSoon {
+  border-color: rgba(249, 115, 22, 0.35);
+  box-shadow:
+    0 4px 10px rgba(249, 115, 22, 0.08),
+    0 1px 3px rgba(0,0,0,0.06);
+}
+
 /* Button Container */
 
 .assignmentButtons {
@@ -565,6 +1462,12 @@ body{
     font-size: 13px;
     margin-top: 5px;
     color: #444;
+}
+
+.fileTypeHint {
+    color: #64748b;
+    font-size: 13px;
+    margin-top: 5px;
 }
 
 .statusSubmitted,
@@ -684,4 +1587,203 @@ body{
         gap: 16px;
     }
 
+    .teacherCourseToolbar,
+    .teacherAssignmentForm,
+    .teacherAnalyticsGrid {
+        grid-template-columns: 1fr;
+    }
+
+    .teacherJoinRow {
+        grid-template-columns: 1fr;
+    }
+
+}
+
+body.dark-theme {
+    background: linear-gradient(135deg, #0f172a, #111827);
+    color: #e5e7eb;
+}
+
+body.dark-theme .navbar,
+body.dark-theme .sidebar,
+body.dark-theme .statCard,
+body.dark-theme .assignmentSection,
+body.dark-theme .assignmentCard,
+body.dark-theme .teacherStatCard,
+body.dark-theme .teacherPanel,
+body.dark-theme .profilePanel,
+body.dark-theme .settingsPanel,
+body.dark-theme .notificationPopup {
+    background: #111827;
+    border-color: #243042;
+    color: #e5e7eb;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+}
+
+body.dark-theme .notificationHeader {
+    border-bottom-color: #243042;
+}
+
+body.dark-theme .dashboardContent,
+body.dark-theme .teacherIntro,
+body.dark-theme .profileEmail,
+body.dark-theme .settingsIntro,
+body.dark-theme .notificationItem p,
+body.dark-theme .notificationItem span,
+body.dark-theme .profileField span,
+body.dark-theme .settingsItem p,
+body.dark-theme .statusPending,
+body.dark-theme .fileName,
+body.dark-theme .fileTypeHint,
+body.dark-theme .profileSectionHeader p {
+    color: #94a3b8;
+}
+
+body.dark-theme .searchBar,
+body.dark-theme .teacherAssignmentForm input,
+body.dark-theme .teacherAssignmentForm textarea,
+body.dark-theme .teacherAssignmentForm select,
+body.dark-theme .teacherSelectField select,
+body.dark-theme .teacherJoinRow input,
+body.dark-theme .settingsSelectItem select,
+body.dark-theme .logoutBtn,
+body.dark-theme .sidebarUserName,
+body.dark-theme .notificationBtn,
+body.dark-theme .notificationActionBtn {
+    background: #0f172a;
+    border-color: #334155;
+    color: #e5e7eb;
+}
+
+body.dark-theme .settingsItem,
+body.dark-theme .settingsSelectItem,
+body.dark-theme .teacherAssignmentCard,
+body.dark-theme .teacherCourseCard,
+body.dark-theme .teacherStudentCard,
+body.dark-theme .teacherSubmissionItem,
+body.dark-theme .teacherLineChartCard,
+body.dark-theme .profileField,
+body.dark-theme .notificationItem {
+    background: #0f172a;
+    border-color: #243042;
+}
+
+body.dark-theme .menuItem:hover,
+body.dark-theme .sidebarUserName:hover,
+body.dark-theme .notificationBtn:hover {
+    background: #172033;
+}
+
+body.dark-theme .active {
+    background: #2563eb;
+}
+
+body.dark-theme .profileDivider,
+body.dark-theme .settingsDivider {
+    background: #243042;
+}
+
+body.dark-theme .teacherAssignmentMeta span,
+body.dark-theme .teacherStudentStats span,
+body.dark-theme .teacherHistorySummary span {
+    background: #111827;
+    border-color: #334155;
+    color: #cbd5e1;
+}
+
+body.dark-theme .teacherDeleteBtn {
+    background: #3f1822;
+    border-color: #7f1d1d;
+    color: #fecdd3;
+}
+
+body.dark-theme .teacherDeleteBtn:hover {
+    background: #4c1d2b;
+}
+
+body.dark-theme .teacherSelectField span,
+body.dark-theme .teacherJoinBox span,
+body.dark-theme .teacherCourseBody p,
+body.dark-theme .teacherCourseHint,
+body.dark-theme .teacherChartRowTop span,
+body.dark-theme .teacherChartMeta,
+body.dark-theme .teacherLineChartLabel span {
+    color: #e5e7eb;
+}
+
+body.dark-theme .teacherHistoryItem {
+    background: #0f172a;
+    border-color: #243042;
+}
+
+body.dark-theme .teacherHistorySummary p {
+    color: #94a3b8;
+}
+
+body.dark-theme .courseJoinMedia {
+    background: #0f172a;
+    border-color: #243042;
+}
+
+body.dark-theme .courseJoinDescription {
+    color: #94a3b8;
+}
+
+body.dark-theme .teacherStudentAvatar {
+    background: #1d4ed8;
+    color: white;
+}
+
+body.dark-theme .notificationPopup::before {
+    background: #111827;
+    border-left-color: #243042;
+    border-top-color: #243042;
+}
+
+body.dark-theme .sidebarAvatar {
+    background: #1d4ed8;
+    color: white;
+}
+
+body.dark-theme .teacherCourseIcon {
+    background: #111827;
+    border-color: #334155;
+}
+
+body.dark-theme .teacherChartTrack {
+    background: #1f2937;
+}
+
+body.dark-theme .teacherChartTrackSuccess {
+    background: #163020;
+}
+
+body.dark-theme .teacherLineChartStroke,
+body.dark-theme .teacherLineChartPoint {
+    stroke: #60a5fa;
+}
+
+body.dark-theme .teacherLineChartPoint {
+    fill: #111827;
+}
+
+body.compact-mode .dashboardContent {
+    padding: 18px 22px;
+}
+
+body.compact-mode .statsGrid {
+    gap: 14px;
+    margin-bottom: 18px;
+}
+
+body.compact-mode .assignmentSection,
+body.compact-mode .teacherPanel,
+body.compact-mode .settingsPanel,
+body.compact-mode .profilePanel {
+    padding: 18px;
+}
+
+body.compact-mode .assignmentCard {
+    margin-bottom: 10px;
+    padding: 14px 16px;
 }

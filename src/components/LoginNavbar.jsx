@@ -1,15 +1,11 @@
-import React from "react";
+import BrandLogo from "./BrandLogo";
 
 const LoginNavbar = () => {
   return (
     <div className="loginnavbar">
       <nav>
         <div className="logoSection">
-          <img
-            src="/assignifyLogo.png"
-            height="70px"
-            alt="logo"
-          />
+          <BrandLogo />
         </div>
       </nav>
     </div>

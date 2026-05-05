@@ -53,8 +53,114 @@ a {
   background: transparent;
 }
 
-.logoSection img {
-    background: transparent;
+.brandLogo {
+  align-items: center;
+  background: transparent;
+  display: inline-flex;
+  gap: 12px;
+}
+
+.brandLogoCompact {
+  gap: 10px;
+}
+
+.brandMark {
+  display: inline-flex;
+  height: 52px;
+  position: relative;
+  width: 52px;
+}
+
+.brandLogoCompact .brandMark {
+  height: 40px;
+  width: 40px;
+}
+
+.brandSheet {
+  background: linear-gradient(180deg, #58bcff 0%, #1f92ff 100%);
+  border: 2px solid #0d355b;
+  border-radius: 13px;
+  box-shadow: 0 10px 20px rgba(31, 146, 255, 0.18);
+  display: block;
+  height: 100%;
+  padding: 11px 9px;
+  position: relative;
+  width: 78%;
+}
+
+.brandLogoCompact .brandSheet {
+  border-radius: 11px;
+  padding: 8px 7px;
+}
+
+.brandLine {
+  background: rgba(9, 43, 78, 0.86);
+  border-radius: 999px;
+  display: block;
+  height: 4px;
+  margin-bottom: 6px;
+}
+
+.brandLogoCompact .brandLine {
+  height: 3px;
+  margin-bottom: 5px;
+}
+
+.brandLineLong {
+  width: 100%;
+}
+
+.brandLineMedium {
+  width: 88%;
+}
+
+.brandLineShort {
+  margin-bottom: 0;
+  width: 46%;
+}
+
+.brandCheck {
+  border-bottom: 8px solid #11a978;
+  border-right: 8px solid #11a978;
+  border-radius: 2px;
+  bottom: 9px;
+  height: 28px;
+  position: absolute;
+  right: 1px;
+  transform: rotate(42deg);
+  width: 16px;
+}
+
+.brandLogoCompact .brandCheck {
+  border-bottom-width: 6px;
+  border-right-width: 6px;
+  bottom: 7px;
+  height: 21px;
+  width: 12px;
+}
+
+.brandWordmark {
+  color: #10385f;
+  font-size: 34px;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.brandLogoCompact .brandWordmark {
+  font-size: 24px;
+}
+
+body.dark-theme .brandSheet {
+  border-color: #7dd3fc;
+  box-shadow: 0 12px 24px rgba(15, 23, 42, 0.28);
+}
+
+body.dark-theme .brandLine {
+  background: rgba(226, 242, 255, 0.92);
+}
+
+body.dark-theme .brandWordmark {
+  color: #e8f2ff;
 }
 
 .loginnavbar nav {
@@ -121,6 +227,46 @@ a {
   width: min(520px, 60%);
   margin-right: 40px;
   justify-self: end;
+}
+
+.authModeSwitch {
+  background: #f8fbff;
+  border: 1px solid #e5eefb;
+  border-radius: 8px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  margin-bottom: 14px;
+  padding: 4px;
+}
+
+.authModeBtn {
+  background: transparent;
+  border: none;
+  border-radius: 6px;
+  color: #64748b;
+  cursor: pointer;
+  font: inherit;
+  padding: 10px 12px;
+}
+
+.authModeActive {
+  background: #2a91ff;
+  color: white;
+}
+
+.teacherSignupLink {
+  color: #64748b;
+  font-size: 13px;
+  margin-top: 14px;
+}
+
+.teacherSignupLink button {
+  background: transparent;
+  border: none;
+  color: #2a91ff;
+  cursor: pointer;
+  font: inherit;
+  padding: 0;
 }
 
 .inputBox {
@@ -339,8 +485,13 @@ button:disabled {
     display: flex;
   }
 
-  .logoSection img {
+  .brandWordmark {
+    font-size: 28px;
+  }
+
+  .brandMark {
     height: 44px;
+    width: 44px;
   }
 
   /* smaller logo on mobile */
@@ -366,6 +517,15 @@ button:disabled {
   .iconBoxFB {
     height: 36px;
     width: 36px;
+  }
+
+  .brandWordmark {
+    font-size: 22px;
+  }
+
+  .brandMark {
+    height: 38px;
+    width: 38px;
   }
 
   .boxText {

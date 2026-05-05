@@ -1,5 +1,6 @@
 import { useRef, useState } from "react";
 import { apiRequest } from "../../api";
+import { useSettings } from "../../settings";
 
 const formatDueDate = (dueDate) => {
   const formatter = new Intl.DateTimeFormat("en-IN", {
@@ -20,7 +21,60 @@ const readFileAsDataUrl = (file) =>
     reader.readAsDataURL(file);
   });
 
+const fileTypeRules = {
+  PDF: {
+    label: "PDF",
+    accept: ".pdf,application/pdf",
+    extensions: [".pdf"],
+    mimeTypes: ["application/pdf"],
+  },
+  DOCX: {
+    label: "DOCX",
+    accept: ".docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    extensions: [".docx"],
+    mimeTypes: ["application/vnd.openxmlformats-officedocument.wordprocessingml.document"],
+  },
+  PPTX: {
+    label: "PPTX",
+    accept: ".pptx,application/vnd.openxmlformats-officedocument.presentationml.presentation",
+    extensions: [".pptx"],
+    mimeTypes: ["application/vnd.openxmlformats-officedocument.presentationml.presentation"],
+  },
+  ZIP: {
+    label: "ZIP",
+    accept: ".zip,application/zip,application/x-zip-compressed",
+    extensions: [".zip"],
+    mimeTypes: ["application/zip", "application/x-zip-compressed", "multipart/x-zip"],
+  },
+  Image: {
+    label: "image",
+    accept: "image/*,.png,.jpg,.jpeg,.gif,.webp,.bmp,.svg",
+    extensions: [".png", ".jpg", ".jpeg", ".gif", ".webp", ".bmp", ".svg"],
+    mimeTypes: ["image/"],
+  },
+};
+
+const matchesFileRule = (file, submitFileType) => {
+  const rule = fileTypeRules[submitFileType];
+
+  if (!rule || !file) {
+    return true;
+  }
+
+  const normalizedName = String(file.name || "").toLowerCase();
+  const normalizedType = String(file.type || "").toLowerCase();
+  const extensionMatches = rule.extensions.some((extension) => normalizedName.endsWith(extension));
+  const mimeMatches = rule.mimeTypes.some((type) =>
+    type.endsWith("/") ? normalizedType.startsWith(type) : normalizedType === type
+  );
+
+  return extensionMatches && (normalizedType ? mimeMatches : true);
+};
+
+const getAcceptValue = (submitFileType) => fileTypeRules[submitFileType]?.accept || "*";
+
 const AssignmentList = ({ assignments, isLoading, onSubmitted }) => {
+  const { settings } = useSettings();
   const fileInputRefs = useRef({});
   const [files, setFiles] = useState({});
   const [progress, setProgress] = useState({});
@@ -32,8 +86,27 @@ const AssignmentList = ({ assignments, isLoading, onSubmitted }) => {
     fileInputRefs.current[assignmentId]?.click();
   };
 
-  const handleFileChange = (e, assignmentId) => {
+  const handleFileChange = (e, assignmentId, submitFileType) => {
     const file = e.target.files[0];
+
+    if (!file) {
+      return;
+    }
+
+    if (!matchesFileRule(file, submitFileType)) {
+      setFiles((currentFiles) => {
+        const nextFiles = { ...currentFiles };
+        delete nextFiles[assignmentId];
+        return nextFiles;
+      });
+      setErrors((currentErrors) => ({
+        ...currentErrors,
+        [assignmentId]: `Only ${submitFileType} files are allowed for this assignment`,
+      }));
+      e.target.value = "";
+      return;
+    }
+
     setFiles((currentFiles) => ({ ...currentFiles, [assignmentId]: file }));
     setErrors((currentErrors) => ({ ...currentErrors, [assignmentId]: "" }));
   };
@@ -141,14 +214,18 @@ const AssignmentList = ({ assignments, isLoading, onSubmitted }) => {
         const isSubmitted = Boolean(task.submission);
         const isSubmitting = Boolean(submitting[task.id]);
         const isDeleting = Boolean(deleting[task.id]);
+        const dueDate = new Date(task.dueDate);
+        const daysUntilDue = Math.ceil((dueDate.getTime() - Date.now()) / (24 * 60 * 60 * 1000));
+        const isDueSoon = settings.dueSoonHighlights && !isSubmitted && daysUntilDue <= 3;
 
         return (
-          <div key={task.id} className="assignmentCard">
+          <div key={task.id} className={`assignmentCard ${isDueSoon ? "assignmentCardSoon" : ""}`}>
 
             <div className="assignmentInfo">
               <h4>{task.title}</h4>
               <p>{task.course}</p>
               <p>Due: {formatDueDate(task.dueDate)}</p>
+              <p className="fileTypeHint">Accepted file type: {task.submitFileType}</p>
               <p className={isSubmitted ? "statusSubmitted" : "statusPending"}>
                 {isSubmitted ? (
                   <>
@@ -218,7 +295,8 @@ const AssignmentList = ({ assignments, isLoading, onSubmitted }) => {
                 type="file"
                 className="hiddenFileInput"
                 ref={(el) => (fileInputRefs.current[task.id] = el)}
-                onChange={(e) => handleFileChange(e, task.id)}
+                accept={getAcceptValue(task.submitFileType)}
+                onChange={(e) => handleFileChange(e, task.id, task.submitFileType)}
               />
 
             </div>

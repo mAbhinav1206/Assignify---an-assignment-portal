@@ -1,8 +1,8 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { apiRequest, saveSession } from "../api";
 
-const SignupForm = () => {
+const SignupForm = ({ role = "student" }) => {
 
   const navigate = useNavigate();
 
@@ -43,12 +43,13 @@ const SignupForm = () => {
         method: "POST",
         body: JSON.stringify({
           email,
-          password
+          password,
+          role
         })
       });
 
       saveSession(data);
-      navigate("/profile-setup", { state: { email } });
+      navigate(role === "teacher" ? "/teacher/analytics" : "/profile-setup", { state: { email } });
 
     } catch (error) {
       setError(error.message);

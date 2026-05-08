@@ -49,7 +49,14 @@ const SignupForm = ({ role = "student" }) => {
       });
 
       saveSession(data);
-      navigate(role === "teacher" ? "/teacher/analytics" : "/profile-setup", { state: { email } });
+      navigate(
+        role === "admin"
+          ? "/admin/overview"
+          : role === "teacher"
+            ? "/teacher-setup"
+            : "/profile-setup",
+        { state: { email } }
+      );
 
     } catch (error) {
       setError(error.message);

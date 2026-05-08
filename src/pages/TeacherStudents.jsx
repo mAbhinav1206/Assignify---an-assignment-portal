@@ -2,18 +2,20 @@ import { useEffect, useMemo, useState } from "react";
 import TeacherShell from "../components/teacher/TeacherShell";
 import { apiRequest, getStoredUser, saveSession } from "../api";
 
-const formatDate = (value) =>
-  new Intl.DateTimeFormat("en-IN", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-  }).format(new Date(value));
+const formatSubjects = (subjects = []) => {
+  if (!Array.isArray(subjects) || subjects.length === 0) {
+    return "Not added yet";
+  }
+
+  return subjects.join(", ");
+};
 
 const TeacherStudents = () => {
   const [user, setUser] = useState(getStoredUser());
   const [courses, setCourses] = useState([]);
   const [selectedCourse, setSelectedCourse] = useState("");
   const [students, setStudents] = useState([]);
+  const [selectedStudentId, setSelectedStudentId] = useState("");
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [removingId, setRemovingId] = useState("");
@@ -24,26 +26,29 @@ const TeacherStudents = () => {
     [courses, selectedCourse]
   );
 
-  const joinLink = selectedCourse
-    ? `${window.location.origin}/join-course/${encodeURIComponent(selectedCourse)}`
-    : "";
+  const selectedStudent = useMemo(
+    () => students.find((student) => student.id === selectedStudentId) || null,
+    [students, selectedStudentId]
+  );
 
   const loadCourses = async () => {
     const [meData, coursesData] = await Promise.all([apiRequest("/me"), apiRequest("/teacher/courses")]);
     saveSession(meData);
     setUser(meData.user);
-    setCourses(coursesData.courses);
-    return coursesData.courses;
+    setCourses(coursesData.courses || []);
+    return coursesData.courses || [];
   };
 
   const loadStudentsForCourse = async (courseName) => {
     if (!courseName) {
       setStudents([]);
+      setSelectedStudentId("");
       return;
     }
 
     const data = await apiRequest(`/teacher/courses/${encodeURIComponent(courseName)}/students`);
-    setStudents(data.students);
+    setStudents(data.students || []);
+    setSelectedStudentId(data.students?.[0]?.id || "");
   };
 
   useEffect(() => {
@@ -66,23 +71,24 @@ const TeacherStudents = () => {
     loadPage();
   }, []);
 
-  const handleCourseChange = async (event) => {
-    const nextCourse = event.target.value;
-    setSelectedCourse(nextCourse);
+  const handleCourseSelect = async (courseName) => {
+    setSelectedCourse(courseName);
     setCopyMessage("");
     setError("");
 
     try {
-      await loadStudentsForCourse(nextCourse);
+      await loadStudentsForCourse(courseName);
     } catch (loadError) {
       setError(loadError.message);
     }
   };
 
-  const handleCopyLink = async () => {
+  const handleCopyLink = async (courseName) => {
     try {
-      await navigator.clipboard.writeText(joinLink);
-      setCopyMessage("Join link copied");
+      await navigator.clipboard.writeText(
+        `${window.location.origin}/join-course/${encodeURIComponent(courseName)}`
+      );
+      setCopyMessage(`Join link copied for ${courseName}`);
     } catch {
       setCopyMessage("Could not copy link");
     }
@@ -97,12 +103,7 @@ const TeacherStudents = () => {
         method: "DELETE",
       });
       await loadStudentsForCourse(selectedCourse);
-      const refreshedCourses = await loadCourses();
-      if (!refreshedCourses.some((course) => course.name === selectedCourse)) {
-        const nextCourse = refreshedCourses[0]?.name || "";
-        setSelectedCourse(nextCourse);
-        await loadStudentsForCourse(nextCourse);
-      }
+      await loadCourses();
     } catch (removeError) {
       setError(removeError.message);
     } finally {
@@ -114,114 +115,208 @@ const TeacherStudents = () => {
     <TeacherShell
       user={user}
       title="Students"
-      intro="View course enrollments, review course-specific submissions, and manage student access."
+      intro="Browse courses first, then open enrolled students and review the key details that matter."
     >
       {error && <p className="formError">{error}</p>}
+      {copyMessage && <p className="teacherCopyMessage">{copyMessage}</p>}
 
       <section className="teacherPanel">
         <div className="teacherSectionHeader">
           <div>
-            <h2>Course Enrollments</h2>
-            <p>Pick a course to see enrolled students and share a join link with new students.</p>
+            <h2>Courses</h2>
+            <p>Open a course card to view enrolled students and share the join link when needed.</p>
           </div>
         </div>
 
-        <div className="teacherCourseToolbar">
-          <label className="teacherSelectField">
-            <span>Select course</span>
-            <select value={selectedCourse} onChange={handleCourseChange} disabled={isLoading || courses.length === 0}>
-              {courses.length === 0 ? (
-                <option value="">No courses yet</option>
-              ) : (
-                courses.map((course) => (
-                  <option key={course.name} value={course.name}>
-                    {course.name}
-                  </option>
-                ))
-              )}
-            </select>
-          </label>
-
-          <div className="teacherJoinBox">
-            <span>Student join link</span>
-            <div className="teacherJoinRow">
-              <input value={joinLink} readOnly placeholder="Select a course to generate a link" />
-              <button className="viewBtn" type="button" onClick={handleCopyLink} disabled={!selectedCourse}>
-                Copy Link
-              </button>
-            </div>
-            {copyMessage && <p className="teacherCopyMessage">{copyMessage}</p>}
-          </div>
-        </div>
-
-        {selectedCourseInfo && (
-          <div className="teacherAssignmentMeta">
-            <span>{selectedCourseInfo.enrolledCount} enrolled</span>
-            <span>{selectedCourseInfo.name}</span>
-          </div>
-        )}
-      </section>
-
-      <section className="teacherPanel">
-        <div className="teacherSectionHeader">
-          <div>
-            <h2>Enrolled Students</h2>
-            <p>Each card shows a student’s submissions for the selected course.</p>
-          </div>
-        </div>
-
-        {students.length === 0 ? (
-          <p className="emptyState">No students are enrolled in this course yet.</p>
+        {isLoading ? (
+          <p className="emptyState">Loading courses...</p>
+        ) : courses.length === 0 ? (
+          <p className="emptyState">No courses available yet.</p>
         ) : (
-          <div className="teacherStudentsGrid">
-            {students.map((student) => (
-              <div className="teacherStudentCard" key={student.id}>
-                <div className="teacherStudentHead">
-                  <div className="teacherStudentAvatar">
-                    {student.profile?.avatar ? (
-                      <img src={student.profile.avatar} alt="" />
-                    ) : (
-                      <span>{(student.profile?.fullName || student.email)[0]}</span>
-                    )}
+          <div className="teacherCourseGrid">
+            {courses.map((course) => (
+              <button
+                className={`teacherCourseCard teacherCourseSelectCard ${
+                  selectedCourse === course.name ? "teacherCourseCardActive" : ""
+                }`}
+                key={course.name}
+                type="button"
+                onClick={() => handleCourseSelect(course.name)}
+              >
+                <div className="teacherCourseCardTop">
+                  <div className="teacherCourseIcon">
+                    {course.thumbnail ? <img src={course.thumbnail} alt="" /> : null}
                   </div>
-                  <div>
-                    <h3>{student.profile?.fullName || student.email}</h3>
-                    <p>{student.email}</p>
+
+                  <div className="teacherCourseBody">
+                    <div className="teacherCourseTitleRow">
+                      <h3>{course.name}</h3>
+                      <span className="studentBadge">{course.visibility}</span>
+                    </div>
+                    <p>{course.description}</p>
                   </div>
                 </div>
 
-                <div className="teacherStudentStats">
-                  <span>{student.submissions.length} submissions</span>
-                  <span>{selectedCourse}</span>
+                <div className="teacherAssignmentMeta">
+                  <span>{course.enrolledCount} enrolled</span>
+                  <span>{course.assignmentCount} assignments</span>
                 </div>
 
-                <div className="teacherSubmissionList">
-                  {student.submissions.length === 0 ? (
-                    <p className="emptyState">No submissions for this course yet.</p>
-                  ) : (
-                    student.submissions.map((submission) => (
-                      <div className="teacherSubmissionItem" key={submission.id}>
-                        <strong>{submission.assignmentTitle}</strong>
-                        <p>{submission.fileName}</p>
-                        <span>{formatDate(submission.submittedAt)}</span>
-                      </div>
-                    ))
-                  )}
+                <div className="teacherCardActions">
+                  <span className="teacherCourseOpenText">Open student list</span>
+                  <button
+                    className="viewBtn"
+                    type="button"
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      handleCopyLink(course.name);
+                    }}
+                  >
+                    Copy Join Link
+                  </button>
                 </div>
-
-                <button
-                  className="teacherDeleteBtn teacherStudentRemoveBtn"
-                  type="button"
-                  disabled={removingId === student.id}
-                  onClick={() => handleRemoveStudent(student.id)}
-                >
-                  {removingId === student.id ? "Removing..." : "Remove Student"}
-                </button>
-              </div>
+              </button>
             ))}
           </div>
         )}
       </section>
+
+      {selectedCourseInfo && (
+        <section className="teacherPanel">
+          <div className="teacherSectionHeader">
+            <div>
+              <h2>{selectedCourseInfo.name}</h2>
+              <p>Click a student name to open their essential academic details.</p>
+            </div>
+          </div>
+
+          <div className="teacherAssignmentMeta">
+            <span>{selectedCourseInfo.enrolledCount} enrolled</span>
+            <span>{selectedCourseInfo.assignmentCount} assignments</span>
+          </div>
+
+          {students.length === 0 ? (
+            <p className="emptyState">No students are enrolled in this course yet.</p>
+          ) : (
+            <div className="teacherStudentExplorer">
+              <div className="teacherStudentListPanel">
+                <h3>Students</h3>
+                <div className="teacherStudentList">
+                  {students.map((student) => (
+                    <button
+                      className={`teacherStudentListItem ${
+                        selectedStudentId === student.id ? "teacherStudentListItemActive" : ""
+                      }`}
+                      key={student.id}
+                      type="button"
+                      onClick={() => setSelectedStudentId(student.id)}
+                    >
+                      <span className="teacherStudentListAvatar">
+                        {student.profile?.avatar ? (
+                          <img src={student.profile.avatar} alt="" />
+                        ) : (
+                          <span>{(student.profile?.fullName || student.profile?.username || "S")[0]}</span>
+                        )}
+                      </span>
+
+                      <span className="teacherStudentListContent">
+                        <strong>{student.profile?.fullName || student.profile?.username || "Student"}</strong>
+                        <span>
+                          {student.profile?.username ? `@${student.profile.username}` : "Student profile"}
+                        </span>
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="teacherStudentDetailPanel">
+                {selectedStudent ? (
+                  <>
+                    <div className="teacherStudentDetailHeader">
+                      <div className="teacherStudentHead">
+                        <div className="teacherStudentAvatar">
+                          {selectedStudent.profile?.avatar ? (
+                            <img src={selectedStudent.profile.avatar} alt="" />
+                          ) : (
+                            <span>
+                              {(
+                                selectedStudent.profile?.fullName ||
+                                selectedStudent.profile?.username ||
+                                "S"
+                              )[0]}
+                            </span>
+                          )}
+                        </div>
+                        <div>
+                          <h3>{selectedStudent.profile?.fullName || "Student"}</h3>
+                          <p>@{selectedStudent.profile?.username || "username"}</p>
+                        </div>
+                      </div>
+
+                      <button
+                        className="teacherDeleteBtn"
+                        type="button"
+                        disabled={removingId === selectedStudent.id}
+                        onClick={() => handleRemoveStudent(selectedStudent.id)}
+                      >
+                        {removingId === selectedStudent.id ? "Removing..." : "Remove Student"}
+                      </button>
+                    </div>
+
+                    <div className="teacherStudentStats">
+                      <span>{selectedStudent.submissions.length} submissions</span>
+                      <span>{selectedCourseInfo.name}</span>
+                    </div>
+
+                    <div className="teacherStudentDetailsGrid">
+                      <div className="teacherDetailItem">
+                        <span>Institution</span>
+                        <strong>{selectedStudent.profile?.institution || selectedStudent.profile?.university || "Not added"}</strong>
+                      </div>
+                      <div className="teacherDetailItem">
+                        <span>Department</span>
+                        <strong>{selectedStudent.profile?.department || selectedStudent.profile?.major || "Not added"}</strong>
+                      </div>
+                      <div className="teacherDetailItem">
+                        <span>Course</span>
+                        <strong>{selectedStudent.profile?.course || selectedCourseInfo.name}</strong>
+                      </div>
+                      <div className="teacherDetailItem">
+                        <span>Year</span>
+                        <strong>{selectedStudent.profile?.year || "Not added"}</strong>
+                      </div>
+                      <div className="teacherDetailItem teacherDetailItemWide">
+                        <span>Subjects</span>
+                        <strong>{formatSubjects(selectedStudent.profile?.subjects)}</strong>
+                      </div>
+                      <div className="teacherDetailItem teacherDetailItemWide">
+                        <span>Favorite Subject</span>
+                        <strong>{selectedStudent.profile?.favoriteSubject || "Not added"}</strong>
+                      </div>
+                    </div>
+
+                    <div className="teacherSubmissionList">
+                      {selectedStudent.submissions.length === 0 ? (
+                        <p className="emptyState">No submissions for this course yet.</p>
+                      ) : (
+                        selectedStudent.submissions.map((submission) => (
+                          <div className="teacherSubmissionItem" key={submission.id}>
+                            <strong>{submission.assignmentTitle}</strong>
+                            <p>{submission.fileName}</p>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  </>
+                ) : (
+                  <p className="emptyState">Choose a student to view details.</p>
+                )}
+              </div>
+            </div>
+          )}
+        </section>
+      )}
     </TeacherShell>
   );
 };

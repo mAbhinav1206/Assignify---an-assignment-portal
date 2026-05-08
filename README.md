@@ -67,12 +67,9 @@ Default local URLs:
 - Comma-separated allowed frontend origins
 - Example: `http://localhost:5173,https://assignify-web.onrender.com`
 
-## Seeded teacher account
+## Teacher accounts
 
-The backend seeds a teacher account automatically:
-
-- email: `teacher@assignify.com`
-- password: `teach1234`
+Teacher accounts are created through the teacher signup flow in the app.
 
 ## Production notes
 

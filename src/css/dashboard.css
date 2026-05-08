@@ -821,6 +821,18 @@ body.dark-theme .notificationBtn {
     padding: 18px;
 }
 
+.teacherCourseSelectCard {
+    cursor: pointer;
+    font: inherit;
+    text-align: left;
+    width: 100%;
+}
+
+.teacherCourseCardActive {
+    border-color: #93c5fd;
+    box-shadow: 0 10px 25px rgba(37, 99, 235, 0.12);
+}
+
 .teacherCourseCardTop {
     align-items: flex-start;
     display: flex;
@@ -872,6 +884,12 @@ body.dark-theme .notificationBtn {
     display: flex;
     flex-wrap: wrap;
     gap: 10px;
+}
+
+.teacherCourseOpenText {
+    color: #2563eb;
+    font-size: 13px;
+    font-weight: 700;
 }
 
 .teacherAssignmentCard,
@@ -1009,6 +1027,186 @@ body.dark-theme .notificationBtn {
 
 .teacherStudentHead {
     justify-content: flex-start;
+}
+
+.teacherStudentExplorer {
+    display: grid;
+    gap: 18px;
+    grid-template-columns: minmax(240px, 300px) minmax(0, 1fr);
+}
+
+.teacherStudentListPanel,
+.teacherStudentDetailPanel {
+    background: #f8fbff;
+    border: 1px solid #e5eefb;
+    border-radius: 8px;
+    padding: 16px;
+}
+
+.teacherStudentListPanel h3 {
+    margin-bottom: 12px;
+}
+
+.teacherStudentList {
+    display: grid;
+    gap: 10px;
+}
+
+.teacherStudentListItem {
+    align-items: center;
+    background: white;
+    border: 1px solid #dbe4f0;
+    border-radius: 8px;
+    cursor: pointer;
+    display: flex;
+    gap: 12px;
+    padding: 12px;
+    text-align: left;
+    width: 100%;
+}
+
+.teacherStudentListItemActive {
+    background: #eef6ff;
+    border-color: #93c5fd;
+}
+
+.teacherStudentListAvatar {
+    align-items: center;
+    background: #dbeafe;
+    border-radius: 50%;
+    color: #1d4ed8;
+    display: inline-flex;
+    flex: 0 0 40px;
+    font-weight: 700;
+    height: 40px;
+    justify-content: center;
+    overflow: hidden;
+    width: 40px;
+}
+
+.teacherStudentListAvatar img {
+    height: 100%;
+    object-fit: cover;
+    width: 100%;
+}
+
+.teacherStudentListContent {
+    display: grid;
+    gap: 4px;
+    min-width: 0;
+}
+
+.teacherStudentListContent strong {
+    color: #111827;
+    font-size: 14px;
+}
+
+.teacherStudentListContent span {
+    color: #64748b;
+    font-size: 12px;
+}
+
+.teacherStudentDetailHeader {
+    align-items: flex-start;
+    display: flex;
+    gap: 16px;
+    justify-content: space-between;
+    margin-bottom: 10px;
+}
+
+.teacherStudentDetailsGrid {
+    display: grid;
+    gap: 12px;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    margin: 16px 0;
+}
+
+.adminFilterRow {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-bottom: 16px;
+}
+
+.adminFilterBtn {
+    background: #f8fbff;
+    border: 1px solid #dbe4f0;
+    border-radius: 999px;
+    color: #334155;
+    cursor: pointer;
+    font: inherit;
+    font-size: 13px;
+    font-weight: 700;
+    padding: 8px 14px;
+}
+
+.adminFilterBtnActive {
+    background: #2563eb;
+    border-color: #2563eb;
+    color: white;
+}
+
+.adminUserFormGrid,
+.adminBanGrid {
+    display: grid;
+    gap: 12px;
+}
+
+.adminUserFormGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    margin: 16px 0;
+}
+
+.adminUserFormGrid textarea,
+.adminUserFormGrid input,
+.adminBanGrid input,
+.adminBanGrid select {
+    background: white;
+    border: 1px solid #dbe4f0;
+    border-radius: 8px;
+    font: inherit;
+    padding: 12px 14px;
+}
+
+.adminUserFormGrid textarea {
+    grid-column: 1 / -1;
+    min-height: 96px;
+    resize: vertical;
+}
+
+.adminBanGrid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    margin-bottom: 14px;
+}
+
+.adminBanPanel {
+    margin-top: 6px;
+}
+
+.teacherDetailItem {
+    background: white;
+    border: 1px solid #e5eefb;
+    border-radius: 8px;
+    display: grid;
+    gap: 6px;
+    padding: 12px;
+}
+
+.teacherDetailItemWide {
+    grid-column: 1 / -1;
+}
+
+.teacherDetailItem span {
+    color: #64748b;
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+}
+
+.teacherDetailItem strong {
+    color: #111827;
+    font-size: 14px;
+    line-height: 1.45;
 }
 
 .teacherStudentAvatar {
@@ -1593,6 +1791,13 @@ body.dark-theme .notificationBtn {
         grid-template-columns: 1fr;
     }
 
+    .teacherStudentExplorer,
+    .teacherStudentDetailsGrid,
+    .adminUserFormGrid,
+    .adminBanGrid {
+        grid-template-columns: 1fr;
+    }
+
     .teacherJoinRow {
         grid-template-columns: 1fr;
     }
@@ -1660,6 +1865,14 @@ body.dark-theme .settingsSelectItem,
 body.dark-theme .teacherAssignmentCard,
 body.dark-theme .teacherCourseCard,
 body.dark-theme .teacherStudentCard,
+body.dark-theme .teacherStudentListPanel,
+body.dark-theme .teacherStudentDetailPanel,
+body.dark-theme .teacherStudentListItem,
+body.dark-theme .teacherDetailItem,
+body.dark-theme .adminUserFormGrid textarea,
+body.dark-theme .adminUserFormGrid input,
+body.dark-theme .adminBanGrid input,
+body.dark-theme .adminBanGrid select,
 body.dark-theme .teacherSubmissionItem,
 body.dark-theme .teacherLineChartCard,
 body.dark-theme .profileField,
@@ -1707,7 +1920,9 @@ body.dark-theme .teacherCourseBody p,
 body.dark-theme .teacherCourseHint,
 body.dark-theme .teacherChartRowTop span,
 body.dark-theme .teacherChartMeta,
-body.dark-theme .teacherLineChartLabel span {
+body.dark-theme .teacherLineChartLabel span,
+body.dark-theme .teacherStudentListContent span,
+body.dark-theme .teacherDetailItem span {
     color: #e5e7eb;
 }
 
@@ -1748,6 +1963,29 @@ body.dark-theme .sidebarAvatar {
 body.dark-theme .teacherCourseIcon {
     background: #111827;
     border-color: #334155;
+}
+
+body.dark-theme .teacherCourseCardActive,
+body.dark-theme .teacherStudentListItemActive {
+    background: #172033;
+    border-color: #2563eb;
+}
+
+body.dark-theme .adminFilterBtn {
+    background: #0f172a;
+    border-color: #334155;
+    color: #e5e7eb;
+}
+
+body.dark-theme .adminFilterBtnActive {
+    background: #2563eb;
+    border-color: #2563eb;
+}
+
+body.dark-theme .teacherStudentListAvatar,
+body.dark-theme .teacherStudentAvatar {
+    background: #1d4ed8;
+    color: white;
 }
 
 body.dark-theme .teacherChartTrack {

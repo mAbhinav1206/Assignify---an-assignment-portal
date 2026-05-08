@@ -1,6 +1,8 @@
 .profileWrapper{
   min-height:100vh;
   background:white;
+  height:100vh;
+  overflow-y:auto;
 }
 
 .profilePage{
@@ -8,6 +10,7 @@
   flex-direction:column;
   align-items:center;
   padding-top:40px;
+  padding-bottom:60px;
 }
 
 /* Step indicator */
@@ -118,6 +121,15 @@
   color:#1a1a1a;
 }
 
+.teacherSetupPage {
+  padding-bottom: 40px;
+}
+
+.teacherSetupCard {
+  width: 520px;
+  margin-bottom: 40px;
+}
+
 .profileCard::before{
   content:"";
   position:absolute;
@@ -195,7 +207,8 @@
 }
 
 .profileForm input,
-.profileForm select{
+.profileForm select,
+.profileForm textarea{
 
   padding:12px;
   border-radius:8px;
@@ -207,6 +220,16 @@
   backdrop-filter:blur(8px);
 
   font-size:14px;
+}
+
+.fieldInvalid {
+  border: 1px solid #ef4444 !important;
+  box-shadow: 0 0 0 1px rgba(239, 68, 68, 0.12);
+}
+
+.teacherSetupTextarea {
+  min-height: 96px;
+  resize: vertical;
 }
 
 .formRow{
@@ -253,6 +276,24 @@
 .saveBtn:hover{
   transform:translateY(-2px);
   background:#1e6fd8;
+}
+
+@media (max-width: 640px) {
+  .teacherSetupCard,
+  .profileCard,
+  .progressWrapper {
+    width: calc(100% - 32px);
+  }
+
+  .profilePage {
+    padding-top: 24px;
+    padding-bottom: 80px;
+  }
+
+  .formRow {
+    flex-direction: column;
+    gap: 12px;
+  }
 }
 
 .interests{

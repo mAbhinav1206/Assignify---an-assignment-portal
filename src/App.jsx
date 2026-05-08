@@ -12,8 +12,14 @@ import AssignmentsPage from "./pages/AssignmentsPage";
 import CalendarPage from "./pages/CalendarPage";
 import ProgressPage from "./pages/ProgressPage";
 import JoinCourse from "./pages/JoinCourse";
+import AdminSignup from "./pages/AdminSignup";
+import AdminOverview from "./pages/AdminOverview";
+import AdminUsers from "./pages/AdminUsers";
+import AdminProfile from "./pages/AdminProfile";
 import TeacherSignup from "./pages/TeacherSignup";
+import TeacherSetup from "./pages/TeacherSetup";
 import TeacherAnalytics from "./pages/TeacherAnalytics";
+import TeacherProfile from "./pages/TeacherProfile";
 import TeacherCourses from "./pages/TeacherCourses";
 import TeacherStudents from "./pages/TeacherStudents";
 import TeacherAssignments from "./pages/TeacherAssignments";
@@ -32,7 +38,16 @@ function App() {
       <Routes>
         <Route path="/" element={<Login />} />
         <Route path="/signup" element={<Signup />} />
+        <Route path="/admin-signup" element={<AdminSignup />} />
         <Route path="/teacher-signup" element={<TeacherSignup />} />
+        <Route
+          path="/teacher-setup"
+          element={
+            <ProtectedRoute roles={["teacher"]}>
+              <TeacherSetup />
+            </ProtectedRoute>
+          }
+        />
         <Route
           path="/join-course/:courseName"
           element={
@@ -106,10 +121,58 @@ function App() {
           }
         />
         <Route
+          path="/admin"
+          element={
+            <ProtectedRoute roles={["admin"]}>
+              <Navigate to="/admin/overview" replace />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/overview"
+          element={
+            <ProtectedRoute roles={["admin"]}>
+              <AdminOverview />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/users"
+          element={
+            <ProtectedRoute roles={["admin"]}>
+              <AdminUsers />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/profile"
+          element={
+            <ProtectedRoute roles={["admin"]}>
+              <AdminProfile />
+            </ProtectedRoute>
+          }
+        />
+        <Route
           path="/teacher"
           element={
             <ProtectedRoute roles={["teacher"]}>
               <Navigate to="/teacher/analytics" replace />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/teacher/profile"
+          element={
+            <ProtectedRoute roles={["teacher"]}>
+              <TeacherProfile />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/teacher/profile/edit"
+          element={
+            <ProtectedRoute roles={["teacher"]}>
+              <TeacherSetup />
             </ProtectedRoute>
           }
         />

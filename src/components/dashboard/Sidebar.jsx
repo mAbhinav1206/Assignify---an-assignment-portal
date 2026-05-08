@@ -7,11 +7,17 @@ const Sidebar = ({ user }) => {
   const displayName = user?.profile?.fullName || user?.email || "Student";
   const avatar = user?.profile?.avatar;
   const isTeacher = user?.role === "teacher";
+  const isAdmin = user?.role === "admin";
   const teacherMenuItems = [
     { label: "Analytics", path: "/teacher/analytics" },
     { label: "Courses", path: "/teacher/courses" },
     { label: "Students", path: "/teacher/students" },
     { label: "Assignments", path: "/teacher/assignments" },
+    { label: "Settings", path: "/settings" },
+  ];
+  const adminMenuItems = [
+    { label: "Overview", path: "/admin/overview" },
+    { label: "Users", path: "/admin/users" },
     { label: "Settings", path: "/settings" },
   ];
   const studentMenuItems = [
@@ -42,7 +48,7 @@ const Sidebar = ({ user }) => {
     <div className="sidebar">
 
       <div>
-        {(isTeacher ? teacherMenuItems : studentMenuItems).map((item) =>
+        {(isAdmin ? adminMenuItems : isTeacher ? teacherMenuItems : studentMenuItems).map((item) =>
           item.path ? (
             <button
               key={item.label}
@@ -60,9 +66,15 @@ const Sidebar = ({ user }) => {
 
       <div className="sidebarFooter">
         <button
-          className={`sidebarUserName ${location.pathname === (isTeacher ? "/teacher/analytics" : "/profile") ? "active" : ""}`}
+          className={`sidebarUserName ${
+            location.pathname === (isAdmin ? "/admin/profile" : isTeacher ? "/teacher/profile" : "/profile")
+              ? "active"
+              : ""
+          }`}
           type="button"
-          onClick={() => navigate(isTeacher ? "/teacher/analytics" : "/profile")}
+          onClick={() =>
+            navigate(isAdmin ? "/admin/profile" : isTeacher ? "/teacher/profile" : "/profile")
+          }
         >
           <span className="sidebarUserInfo">
             <span className="sidebarAvatar">

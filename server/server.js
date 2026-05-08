@@ -74,23 +74,41 @@ const userSchema = new mongoose.Schema(
     },
     role: {
       type: String,
-      enum: ["student", "teacher"],
+      enum: ["student", "teacher", "admin"],
       default: "student",
+    },
+    ban: {
+      isActive: {
+        type: Boolean,
+        default: false,
+      },
+      reason: String,
+      type: {
+        type: String,
+        enum: ["temporary", "permanent"],
+      },
+      until: Date,
     },
     profile: {
       avatar: String,
       fullName: String,
       username: String,
       university: String,
+      institution: String,
       course: String,
       year: String,
       phone: String,
       major: String,
+      department: String,
+      designation: String,
       studentId: String,
       favoriteSubject: String,
       studyTime: String,
       reminder: String,
       subjects: [String],
+      subjectsHandled: [String],
+      officeHours: String,
+      bio: String,
       completed: {
         type: Boolean,
         default: false,
@@ -199,48 +217,6 @@ const Assignment = mongoose.model("Assignment", assignmentSchema);
 const Course = mongoose.model("Course", courseSchema);
 const Submission = mongoose.model("Submission", submissionSchema);
 
-const defaultAssignments = [
-  {
-    title: "Math Homework",
-    course: "Mathematics",
-    dueDate: new Date(Date.now() + 24 * 60 * 60 * 1000),
-    description: "Complete the worksheet and upload your solution file.",
-    visibility: "public",
-    submitFileType: "PDF",
-  },
-  {
-    title: "Physics Lab Report",
-    course: "Physics",
-    dueDate: new Date(Date.now() + 4 * 24 * 60 * 60 * 1000),
-    description: "Submit your final lab report as a PDF or document.",
-    visibility: "private",
-    submitFileType: "DOCX",
-  },
-  {
-    title: "Computer Science Project",
-    course: "Computer Science",
-    dueDate: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000),
-    description: "Attach your project archive or report.",
-    visibility: "public",
-    submitFileType: "ZIP",
-  },
-];
-
-const courseCatalog = {
-  Mathematics: {
-    description: "Strengthen problem-solving with weekly practice sets, proofs, and guided revision.",
-    thumbnail: "/curriculum.png",
-  },
-  Physics: {
-    description: "Explore concepts, lab reports, and applied reasoning through structured assignments.",
-    thumbnail: "/pendingTasks.png",
-  },
-  "Computer Science": {
-    description: "Build coding fluency, project discipline, and technical writing through practical tasks.",
-    thumbnail: "/search.png",
-  },
-};
-
 const uploadDir = path.join(__dirname, "uploads");
 
 const asyncHandler = (handler) => async (req, res, next) => {
@@ -260,10 +236,13 @@ const publicUser = (user) => ({
   id: user._id,
   email: user.email,
   role: user.role,
+  ban: user.ban || { isActive: false },
   profile: user.profile || {},
 });
 
 const safeFileName = (fileName) => fileName.replace(/[^a-zA-Z0-9._-]/g, "_");
+const emptyProfile = (profile) => profile?.toObject?.() || profile || {};
+const decodeCourseValue = (value) => decodeURIComponent(String(value || "").trim());
 
 const assignmentFileRules = {
   PDF: {
@@ -328,13 +307,9 @@ const deleteSubmissionForUser = async (userId, assignmentId) => {
 };
 
 const getCourseMeta = (courseName) => ({
-  description:
-    courseCatalog[courseName]?.description ||
-    `Join ${courseName} to receive assignments, track submissions, and stay aligned with your class schedule.`,
-  thumbnail: courseCatalog[courseName]?.thumbnail || "/curriculum.png",
+  description: `Join ${courseName} to receive assignments, track submissions, and stay aligned with your class schedule.`,
+  thumbnail: "/curriculum.png",
 });
-
-const decodeCourseValue = (value) => decodeURIComponent(String(value || "").trim());
 
 const ensureCourseRecord = async (courseName, overrides = {}) => {
   const trimmedCourseName = String(courseName || "").trim();
@@ -365,6 +340,54 @@ const ensureCourseRecord = async (courseName, overrides = {}) => {
   );
 };
 
+const getMostRecentSubmission = (submissions) =>
+  [...submissions].sort((firstSubmission, secondSubmission) =>
+    new Date(secondSubmission.submittedAt) - new Date(firstSubmission.submittedAt)
+  )[0];
+
+const getBanState = (user) => {
+  const ban = user?.ban || {};
+
+  if (!ban.isActive) {
+    return { active: false };
+  }
+
+  if (ban.type === "permanent") {
+    return { active: true, reason: ban.reason, type: "permanent" };
+  }
+
+  const untilTime = ban.until ? new Date(ban.until).getTime() : null;
+
+  if (!untilTime || Number.isNaN(untilTime)) {
+    return { active: false };
+  }
+
+  if (untilTime <= Date.now()) {
+    return { active: false, expired: true };
+  }
+
+  return {
+    active: true,
+    reason: ban.reason,
+    type: "temporary",
+    until: ban.until,
+  };
+};
+
+const clearExpiredBanIfNeeded = async (user) => {
+  const banState = getBanState(user);
+
+  if (!banState.expired) {
+    return banState;
+  }
+
+  user.ban = {
+    isActive: false,
+  };
+  await user.save();
+  return { active: false };
+};
+
 const authenticate = asyncHandler(async (req, res, next) => {
   const authHeader = req.headers.authorization || "";
   const token = authHeader.startsWith("Bearer ") ? authHeader.slice(7) : null;
@@ -379,6 +402,17 @@ const authenticate = asyncHandler(async (req, res, next) => {
 
     if (!user) {
       return res.status(401).json({ message: "User no longer exists" });
+    }
+
+    const banState = await clearExpiredBanIfNeeded(user);
+
+    if (banState.active) {
+      return res.status(403).json({
+        message:
+          banState.type === "permanent"
+            ? "This account has been permanently banned"
+            : `This account is banned until ${new Date(banState.until).toLocaleString("en-IN")}`,
+      });
     }
 
     req.user = user;
@@ -397,52 +431,13 @@ const requireRole = (role) =>
     next();
   });
 
-const seedAssignments = async () => {
-  const count = await Assignment.countDocuments();
-
-  if (count === 0) {
-    await Assignment.insertMany(defaultAssignments);
-  }
-};
-
-const seedCourses = async () => {
-  const courseNames = Array.from(
-    new Set([...Object.keys(courseCatalog), ...defaultAssignments.map((assignment) => assignment.course)])
-  );
-
-  await Promise.all(
-    courseNames.map((courseName) =>
-      ensureCourseRecord(courseName, {
-        description: getCourseMeta(courseName).description,
-        thumbnail: getCourseMeta(courseName).thumbnail,
-      })
-    )
-  );
-};
-
-const seedTeacherAccount = async () => {
-  const teacherEmail = "teacher@assignify.com";
-  const existingTeacher = await User.findOne({ email: teacherEmail });
-
-  if (!existingTeacher) {
-    const hashedPassword = await bcrypt.hash("teach1234", 10);
-    await User.create({
-      email: teacherEmail,
-      password: hashedPassword,
-      role: "teacher",
-      profile: {
-        fullName: "Assignify Teacher",
-        username: "assignify-teacher",
-        completed: true,
-      },
-    });
-  }
-};
-
-mongoose.connection.once("open", () => {
-  Promise.all([seedAssignments(), seedCourses(), seedTeacherAccount()]).catch((error) => {
-    console.error("Seed error:", error.message);
-  });
+const toManagedUserPayload = (user) => ({
+  id: user._id,
+  email: user.email,
+  role: user.role,
+  ban: user.ban || { isActive: false },
+  profile: user.profile || {},
+  createdAt: user.createdAt,
 });
 
 app.get("/", (req, res) => {
@@ -458,7 +453,8 @@ app.post(
   asyncHandler(async (req, res) => {
     const email = String(req.body.email || "").trim().toLowerCase();
     const password = String(req.body.password || "");
-    const role = req.body.role === "teacher" ? "teacher" : "student";
+    const requestedRole = String(req.body.role || "").trim();
+    const role = ["teacher", "admin"].includes(requestedRole) ? requestedRole : "student";
 
     if (!email || !password) {
       return res.status(400).json({ message: "Please fill all fields" });
@@ -484,7 +480,7 @@ app.post(
       password: hashedPassword,
       role,
       profile: {
-        completed: role === "teacher",
+        completed: role === "admin",
       },
     });
 
@@ -523,6 +519,17 @@ app.post(
       return res.status(403).json({ message: `This account is not registered as a ${role}` });
     }
 
+    const banState = await clearExpiredBanIfNeeded(user);
+
+    if (banState.active) {
+      return res.status(403).json({
+        message:
+          banState.type === "permanent"
+            ? "This account has been permanently banned"
+            : `This account is banned until ${new Date(banState.until).toLocaleString("en-IN")}`,
+      });
+    }
+
     res.json({
       message: "Login successful",
       token: createToken(user),
@@ -548,19 +555,25 @@ app.put(
       "fullName",
       "username",
       "university",
+      "institution",
       "course",
       "year",
       "phone",
       "major",
+      "department",
+      "designation",
       "studentId",
       "favoriteSubject",
       "studyTime",
       "reminder",
       "subjects",
+      "subjectsHandled",
+      "officeHours",
+      "bio",
       "completed",
     ];
 
-    const nextProfile = { ...(req.user.profile?.toObject?.() || req.user.profile || {}) };
+    const nextProfile = { ...emptyProfile(req.user.profile) };
 
     allowedFields.forEach((field) => {
       if (req.body[field] !== undefined) {
@@ -830,6 +843,7 @@ app.get(
     res.json({
       students: students.map((student) => {
         const studentSubmissions = submissionsByStudent.get(student._id.toString()) || [];
+        const recentSubmission = getMostRecentSubmission(studentSubmissions);
         const completionRate =
           assignments.length === 0
             ? 0
@@ -842,15 +856,10 @@ app.get(
           completionRate,
           submittedCount: studentSubmissions.length,
           pendingCount: Math.max(assignments.length - studentSubmissions.length, 0),
-          recentSubmission: studentSubmissions
-            .sort((a, b) => new Date(b.submittedAt) - new Date(a.submittedAt))[0]
+          recentSubmission: recentSubmission
             ? {
-                assignmentTitle: studentSubmissions
-                  .sort((a, b) => new Date(b.submittedAt) - new Date(a.submittedAt))[0]
-                  .assignment?.title,
-                submittedAt: studentSubmissions
-                  .sort((a, b) => new Date(b.submittedAt) - new Date(a.submittedAt))[0]
-                  .submittedAt,
+                assignmentTitle: recentSubmission.assignment?.title,
+                submittedAt: recentSubmission.submittedAt,
               }
             : null,
         };
@@ -996,7 +1005,7 @@ app.delete(
     }
 
     student.profile = {
-      ...(student.profile?.toObject?.() || student.profile || {}),
+      ...emptyProfile(student.profile),
       course: "",
     };
 
@@ -1018,7 +1027,7 @@ app.post(
     }
 
     req.user.profile = {
-      ...(req.user.profile?.toObject?.() || req.user.profile || {}),
+      ...emptyProfile(req.user.profile),
       course: courseName,
     };
 
@@ -1191,6 +1200,180 @@ app.delete(
     await assignment.deleteOne();
 
     res.json({ message: "Assignment deleted" });
+  })
+);
+
+app.get(
+  "/admin/overview",
+  authenticate,
+  requireRole("admin"),
+  asyncHandler(async (req, res) => {
+    const [studentsCount, teachersCount, adminsCount, bannedUsersCount] = await Promise.all([
+      User.countDocuments({ role: "student" }),
+      User.countDocuments({ role: "teacher" }),
+      User.countDocuments({ role: "admin" }),
+      User.countDocuments({ "ban.isActive": true }),
+    ]);
+
+    res.json({
+      stats: {
+        studentsCount,
+        teachersCount,
+        adminsCount,
+        bannedUsersCount,
+      },
+    });
+  })
+);
+
+app.get(
+  "/admin/users",
+  authenticate,
+  requireRole("admin"),
+  asyncHandler(async (req, res) => {
+    const users = await User.find().sort({ createdAt: -1 });
+
+    res.json({
+      users: users.map(toManagedUserPayload),
+    });
+  })
+);
+
+app.put(
+  "/admin/users/:userId",
+  authenticate,
+  requireRole("admin"),
+  asyncHandler(async (req, res) => {
+    const user = await User.findById(req.params.userId);
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    const allowedFields = [
+      "fullName",
+      "username",
+      "institution",
+      "university",
+      "department",
+      "major",
+      "designation",
+      "course",
+      "year",
+      "studentId",
+      "favoriteSubject",
+      "studyTime",
+      "reminder",
+      "officeHours",
+      "bio",
+      "avatar",
+    ];
+    const nextProfile = { ...emptyProfile(user.profile) };
+
+    allowedFields.forEach((field) => {
+      if (req.body[field] !== undefined) {
+        nextProfile[field] = req.body[field];
+      }
+    });
+
+    if (req.body.subjects !== undefined) {
+      nextProfile.subjects = Array.isArray(req.body.subjects)
+        ? req.body.subjects
+        : String(req.body.subjects || "")
+            .split(",")
+            .map((value) => value.trim())
+            .filter(Boolean);
+    }
+
+    if (req.body.subjectsHandled !== undefined) {
+      nextProfile.subjectsHandled = Array.isArray(req.body.subjectsHandled)
+        ? req.body.subjectsHandled
+        : String(req.body.subjectsHandled || "")
+            .split(",")
+            .map((value) => value.trim())
+            .filter(Boolean);
+    }
+
+    if (req.body.completed !== undefined) {
+      nextProfile.completed = Boolean(req.body.completed);
+    }
+
+    if (req.body.role && ["student", "teacher", "admin"].includes(req.body.role)) {
+      user.role = req.body.role;
+    }
+
+    user.profile = nextProfile;
+    await user.save();
+
+    res.json({
+      message: "User updated",
+      user: toManagedUserPayload(user),
+    });
+  })
+);
+
+app.post(
+  "/admin/users/:userId/ban",
+  authenticate,
+  requireRole("admin"),
+  asyncHandler(async (req, res) => {
+    const user = await User.findById(req.params.userId);
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    if (user._id.toString() === req.user._id.toString()) {
+      return res.status(400).json({ message: "You cannot ban your own admin account" });
+    }
+
+    const type = String(req.body.type || "").trim();
+    const reason = String(req.body.reason || "").trim();
+    const days = Number(req.body.days || 0);
+
+    if (!["temporary", "permanent"].includes(type)) {
+      return res.status(400).json({ message: "Ban type must be temporary or permanent" });
+    }
+
+    if (type === "temporary" && (!Number.isFinite(days) || days <= 0)) {
+      return res.status(400).json({ message: "Temporary bans must include a valid number of days" });
+    }
+
+    user.ban = {
+      isActive: true,
+      reason,
+      type,
+      until: type === "temporary" ? new Date(Date.now() + days * 24 * 60 * 60 * 1000) : undefined,
+    };
+    await user.save();
+
+    res.json({
+      message: type === "permanent" ? "User banned permanently" : "User banned temporarily",
+      user: toManagedUserPayload(user),
+    });
+  })
+);
+
+app.post(
+  "/admin/users/:userId/unban",
+  authenticate,
+  requireRole("admin"),
+  asyncHandler(async (req, res) => {
+    const user = await User.findById(req.params.userId);
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    user.ban = {
+      isActive: false,
+    };
+    await user.save();
+
+    res.json({
+      message: "User unbanned",
+      user: toManagedUserPayload(user),
+    });
   })
 );
 

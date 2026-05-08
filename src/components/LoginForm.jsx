@@ -31,8 +31,12 @@ function LoginForm() {
       saveSession(data);
       const settings = getStoredSettings();
       navigate(
-        data.user?.role === "teacher"
-          ? "/teacher"
+        data.user?.role === "admin"
+          ? "/admin/overview"
+          : data.user?.role === "teacher"
+          ? data.user?.profile?.completed
+            ? "/teacher"
+            : "/teacher-setup"
           : data.user?.profile?.completed
             ? settings.autoOpenDashboard
               ? "/dashboard"
@@ -65,6 +69,13 @@ function LoginForm() {
             onClick={() => setMode("teacher")}
           >
             Teacher Login
+          </button>
+          <button
+            className={`authModeBtn ${mode === "admin" ? "authModeActive" : ""}`}
+            type="button"
+            onClick={() => setMode("admin")}
+          >
+            Admin Login
           </button>
         </div>
 
@@ -104,6 +115,15 @@ function LoginForm() {
           <div className="teacherSignupLink">
             Need a teacher account?{" "}
             <button type="button" onClick={() => navigate("/teacher-signup")}>
+              Sign up here
+            </button>
+          </div>
+        )}
+
+        {mode === "admin" && (
+          <div className="teacherSignupLink">
+            Need an admin account?{" "}
+            <button type="button" onClick={() => navigate("/admin-signup")}>
               Sign up here
             </button>
           </div>
